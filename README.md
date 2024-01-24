@@ -4,18 +4,6 @@
 
 ## Agents
 
-## Camera
-
-## Generation
-
-## Broadcast
-
-## DataStructures
-
-## Groundings
-
-## PathPlanning
-
 ### Agent Class
 -------
 
@@ -125,7 +113,7 @@
  Updates coordinate grid based on a directional move and the result of an environmental scan
 
 
-    public void Move(Vector2 dir, int[][] localMap)
+    public void Move(Vector2 dir, int[][] localMap, float inverseMoveSpeed)
 
 
 
@@ -152,7 +140,7 @@
  Debugging method which prints a grid representation to console
 
 
-    public void Print()
+    public void Print(float inverseMoveSpeed)
 
 
 
@@ -186,7 +174,7 @@
  Creates the physical QuadTree by initializing one base quad on the entire grid and recursivly partitioning that quad
 
 
-    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset)
+    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 1)
 
 
 
@@ -195,7 +183,7 @@
  Mainly debugging method to visualize the entire QuadTree in 3D space overlayed on its position in the x and z dimensions
 
 
-    public void Print()
+    public void Print(float time)
 
 
 
@@ -266,7 +254,7 @@
  A primarily debugging method which draws the quads overlayed in 3D space for visualization
 
 
-    public void Print()
+    public void Print(float time)
 
 ### GroundingMethod Class
 -------
@@ -289,7 +277,7 @@
  Class to compile data from local grids for pathfinding using QuadTrees
 
 
-    public class PathPlanner
+    
 
 
 
@@ -314,6 +302,8 @@
 
 
     public bool Move(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping)
+
+## Camera
 
 ### LookAround Class
 -------
@@ -354,7 +344,7 @@
 ### PlayerMove Class
 -------
 
-## Terrain
+## Generation
 
 ### ObjectPool Class
 -------
@@ -407,10 +397,6 @@
 
 
     public void disableObject(GameObject obj)
-
-## Foliage
-
-## GenerationTypes
 
 ### GenerateChunks Class
 -------

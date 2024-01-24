@@ -58,13 +58,18 @@ def scanForFunctions(line, newFileContents):
 bScanning = False
 bOneMoreLine = False
 endSearchTerm = '*/'
+currDir = ""
 for root, dirs, files in os.walk(sourceFolder):
     # ADD EACH DIRECTORY TO THE DOCUMENTATION (NEEDS FIX SO FILES ARE UNDER CORRECT DIRECTORY)
-    for dir in dirs:
-        newFileContents += "## " + dir + "\n\n"
-
+    # for dir in dirs:
+    #     newFileContents += "## " + dir + "\n\n"
     for file in files:
-        print(file)
+        print(root)
+        if len(root.split('/')) > 0 and currDir != root.split("/")[len(root.split('/')) - 1].split("\\")[0]:
+            currDir = root.split("/")[len(root.split('/')) - 1]
+            newFileContents += "## " + currDir + "\n\n"
+            print(currDir)
+
         if file.split('.')[1] == "cs" and len(file.split('.')) == 2:
 
             # ADD FILE NAME TO DOCUMENTATION
