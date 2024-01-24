@@ -318,6 +318,39 @@
 ### LookAround Class
 -------
 
+
+
+ ### LookAround
+
+ -------
+
+ Simple class for player mouse directed camera
+
+
+    public class LookAround : MonoBehaviour
+
+
+
+ #### Start
+
+ Unity engine event called at start of runtime
+
+ Locks cursor to window
+
+
+    void Start()
+
+
+
+ #### Update
+
+ Unity engine event called every frame
+
+ Handles user IO
+
+
+    void Update()
+
 ### PlayerMove Class
 -------
 
@@ -326,12 +359,72 @@
 ### ObjectPool Class
 -------
 
+
+
+ ### ObjectPool
+
+ -------
+
+ Implementation of an abstract object pool for efficient mass object management
+
+
+    public class ObjectPool : MonoBehaviour
+
+
+
+ #### void OnDestroy
+
+ Unity message for when an object is destroyed
+
+ Calls destroy on each owned object in order to prevent an object cascadememory leak
+
+
+    private void OnDestroy()
+
+
+
+ #### void initializePool
+
+ Creates the set of objects of a given size and prepares the data structure for their retrieval
+
+
+    public void initializePool(int poolSize, GameObject objectClass) Initial instantiation
+
+
+
+ #### GameObject getObject
+
+ Handles the retrieval of a new object from the pool
+
+
+    public GameObject getObject()
+
+
+
+ #### void disableObject
+
+ A method for returning an unused object to the pool
+
+
+    public void disableObject(GameObject obj)
+
 ## Foliage
 
 ## GenerationTypes
 
 ### GenerateChunks Class
 -------
+
+
+
+ ### GenerateChunks
+
+ -------
+
+ Class for managing terrain sections in a cohesive way procedurally
+
+
+    public class GenerateChunks : MonoBehaviour
 
 
 
@@ -344,829 +437,534 @@ Terrain-specific valu
 
 
 
-void Awake() {
 
-StartCoroutine(init());
 
-}
+ #### void Awake
 
+ Unity engine event which launches a seperate thread for in editor initialization
 
 
-IEnumerator init(bool inEditor = false)
+    void Awake() {
 
-{
 
-if (inEditor) yield return null;
 
-DestroyAllChildren(inEditor);
+ #### IEnumerator init
 
-rand = Random.Range(0f, 1f);
+ Multi-threaded method to initialize within editor
 
-initGenerateNewChunks();
 
-}
+    IEnumerator init(bool inEditor = false)
 
 
 
-private void DestroyAllChildren(bool inEditor)
+ #### void DestroyAllChildren
 
-{
+ Destroys the generated terrain sections (chunks)
 
-for (int i = 0; i < gameObject.transform.childCount; i++)
 
-{
+    private void DestroyAllChildren(bool inEditor)
 
-DestroyImmediate(gameObject.transform.GetChild(i).gameObject);
 
-}
 
-}
+ #### int[] getChunkCoords
 
+ Retrieves the transformed coordinates of the player in terms of the chunk array
 
 
-int[] getChunkCoords() {
+    int[] getChunkCoords() {
 
-Error on negative numbers
 
-int oneI = (int)(Player.transform.position.xchunkSize);
 
-int twoI = (int)(Player.transform.position.zchunkSize);
+ #### int fixNegativeZero
 
+ Pre-truncation comparison for player position to avoid rounding error
 
 
-Fix for 0.5==(-0.5) due to truncation
+    int fixNegativeZero(float pos, int oneI) {
 
-oneI = fixNegativeZero(Player.transform.position.x, oneI);
 
-twoI = fixNegativeZero(Player.transform.position.z, twoI);
 
+ #### void initGenerateNewChunks
 
+ Initialization method for the TerrainSection array, creates the landscape
 
-return new int[] {oneI, twoI};
 
-}
+    void initGenerateNewChunks() {
 
 
 
-Pre-truncation comparison for player position
+ #### GameObject createChunk
 
-int fixNegativeZero(float pos, int oneI) {
+ Utilises the ObjectPool to retrieve and initialize a new chunk in its appropriate position
 
-float oneF = poschunkSize;
 
-if (oneF < oneI) return oneI-1;
+    GameObject createChunk(int i, int j, int x) {
 
-else return oneI;
 
-}
 
 
 
-Initialization method for creating chunk grid
+ #### void resizeChunks
 
-void initGenerateNewChunks() {
+ Ensures square terrain
 
-currentChunkCoords = getChunkCoords();
 
+    protected virtual void resizeChunks(GenerateTerrain terrainLogic)
 
 
-Create Pool for terrain chunks
 
-GameObject newPool = Instantiate(poolObject, Vector3.zero, Quaternion.identity) as GameObject;
+ #### void Update
 
-newPool.transform.parent = gameObject.transform;
+ Unity editor event called every frame
 
-chunkPool = newPool.GetComponent<ObjectPool>();
+ Calls verification method to check for Player movement
 
-chunkPool.initializePool(((2viewDist) + 1)  ((2  viewDist) + 1), terrainPrefab);
 
+    void Update()
 
 
-Create Pools for foliage
 
-GenerateFoliage[] foliageGenerators = terrainPrefab.GetComponents<GenerateFoliage>();
+ #### void OnValidate
 
-if (foliageGenerators != null)
+ Checks for editor value RESET in order to allow editor regeneration of terrain
 
-{
 
-foliagePools = new List<ObjectPool[]>();
+    void OnValidate()
 
-for (int i = 0; i < ((2  viewDist) + 1)  ((2  viewDist) + 1); i++)
 
-{
 
-foliagePools.Add(new ObjectPool[foliageGenerators.Length]);
+ #### void verifyChunkState
 
-for (int j = 0; j < foliageGenerators.Length; j++)
+ Checks if Player's transformed chunk coordinates are within the allowed range, and if not generates chunks to follow the Player
 
-{
 
-foliagePools[i][j] = Instantiate(poolObject, Vector3.zero, Quaternion.identity).GetComponent<ObjectPool>();
+    void verifyChunkState() {
 
-foliagePools[i][j].initializePool(foliageGenerators[j].foliageDensity, foliageGenerators[j].foliageClass);
 
-}
 
-}
+ #### void updateChunks
 
-}
+ Iterates through furthest side of the chunk array destroying it, then iterates through opposite side creating new chunks
 
 
+    void updateChunks(Direction dir) {
 
-int x = 0;
 
-for (int i = currentChunkCoords[0] - viewDist; i <= currentChunkCoords[0] + viewDist; i++) {
 
-for (int j = currentChunkCoords[1] - viewDist; j <= currentChunkCoords[1] + viewDist; j++) {
+ #### void DestroyTerrainSection
 
-createChunk(i, j, x);
+ "Destroys" a chunk by returning it to the ObjectPool
 
-x++;
 
-}
-
-}
-
-}
-
-
-
-Logic handler for new chunk creation
-
-GameObject createChunk(int i, int j, int x) {
-
-GameObject newSection = chunkPool.getObject(); Uses Pooled Object Implementation
-
-
-
-Population of individual modules based on collective settings
-
-GenerateTerrain terrainLogic = newSection.GetComponent<GenerateTerrain>();
-
-resizeChunks(terrainLogic);
-
-newSection.transform.position = new Vector3(i  chunkSize, 0, j  chunkSize);
-
-
-
-terrainLogic.partitions = detail;
-
-terrainLogic.severity = terrainSeverity;
-
-terrainLogic.scale = terrainScale;
-
-terrainLogic.rand = rand;
-
-terrainLogic.setSeed(SEED);
-
-if (meshMat)
-
-{
-
-newSection.GetComponent<MeshRenderer>().material = meshMat;
-
-}
-
-
-
-DEBUG SIDE VERTS
-
-terrainLogic.showSideVerts = debugEdges;
-
-terrainLogic.showVerts = debugVertices;
-
-
-
-
-
-for (int w = 0; w < foliagePools[x].Length; w++)
-
-{
-
-foliagePools[x][w].transform.parent = terrainLogic.gameObject.transform;
-
-}
-
-
-
-terrainLogic.initialize(foliagePools[x]);
-
-
-
-VERTEX COPYING FOR ADJACENT CELLS
-
-terrainLogic.AddSection();
-
-terrain.Insert(x, newSection);
-
-
-
-return newSection;
-
-}
-
-
-
-protected virtual void resizeChunks(GenerateTerrain terrainLogic)
-
-{
-
-terrainLogic.xSize = chunkSize;
-
-terrainLogic.zSize = chunkSize;
-
-}
-
-
-
- Update is called once per frame
-
-void Update()
-
-{
-
-Updates chunks when player crosses chunk boundry
-
-verifyChunkState();
-
-}
-
-
-
-void OnValidate()
-
-{
-
-if (RESET)
-
-{
-
-RESET = false;
-
-CODE TO REGENERATE THE MESH HERE
-
-StartCoroutine(init(true));
-
-}
-
-}
-
-
-
-void verifyChunkState() {
-
-
-
-Checks each direction, loops through each chunk movement (BAD for teleportation implementations:
-
-O(N) where N is # of chunks teleported across, O(N^2) for 2 axis teleport)
-
-
-    if (!shouldExpand) return;
+    void DestroyTerrainSection(GameObject terrain)
 
 ### GenerateMazeChunks Class
 -------
 
+
+
+ ### GenerateMazeChunks
+
+ -------
+
+ Adaptation of the generic GenerateChunks for creating mazesrooms
+
+
+    public class GenerateMazeChunks : GenerateChunks
+
+
+
+ #### void resizeChunks
+
+ Overriden method from GenerateChunks which interfaces with the MazeGenerator subclass
+
+
+    protected override void resizeChunks(GenerateTerrain terrainLogic)
+
 ### GenerateTerrain Class
 -------
 
-             
 
 
+ ### GenerateTerrain
 
- Side meshing verticie
-    protected Vector3[][] sidedVertices; Copied from verticies
+ -------
 
-            
+ Class which handles the terrain generation for a specific TerrainSection within the array of terrain chunks
 
 
+    public class GenerateTerrain : MonoBehaviour
 
- Main mesh vertecie
-    protected Vector3[] vertices;
 
-           
 
+ #### void initialize
 
+ Creates the section of terrain using the prescribed algoritms
 
-private MeshCollider MC;
 
-private bool bInit = false;
+    public void initialize(ObjectPool[] foliagePools) {
 
-private int SEED = 12345678;
 
 
+ #### void getYAtLocation
 
- Start is called before the first frame update
+ Helper method for utilizing Linecasts to determine the precise height at any x, y (x, z in world space) location
 
-void Start() {
 
+    public float getYAtLocation(Vector2 Location)
 
 
-}
 
+ #### void setSeed
 
+ Mutator method for the SEED value
 
-public void initialize(ObjectPool[] foliagePools) {
 
-InitializeComp();
+    public void setSeed(int inSeed) 
 
-foliageGenerators = GetComponents<GenerateFoliage>();
 
-for (int i = 0; i < foliageGenerators.Length; i++) {
 
-if (foliageGenerators[i] != null)
+ #### void InitializeComp
 
-{
+ Sets up mesh component for terrain generation and vertextriangle insertion
 
-foliageGenerators[i].setFoliagePool(foliagePools[i]);
 
-foliageGenerators[i].initialize();
+    void InitializeComp() {
 
-}
 
-}
 
-}
+ #### void AddSection
 
+ Interface method for use within GenerateChunks
 
 
-public float getYAtLocation(Vector2 Location)
+    public void AddSection() {
 
-{
 
-Vector3 low = new Vector3(Location.x, -99999, Location.y);
 
-Vector3 high = new Vector3(Location.x, 99999, Location.y);
+ #### struct Side
 
+ Data structure for passing all relevent data to represent one side of the TerrainSection
 
 
-RaycastHit info;
+    public struct Side {
 
-Physics.Linecast(high, low, out info);
 
-return info.point.y;
 
-}
+ #### void CreateShape
 
+ Master method for creating the terrain
 
 
-public void setSeed(int inSeed) { SEED = inSeed; }
+    void CreateShape() {
 
 
 
-void InitializeComp() {
+ #### void CreateSideContainers
 
-Initialization
+ Initialized sub vertex arrays for holding the side vertices for easy alignment
 
-if (mesh == null) mesh = new Mesh();
 
-else mesh.Clear();
+    void CreateSideContainers() {
 
 
 
-GetComponent<MeshFilter>().mesh = mesh;
+ #### float[] GetParams
 
+ Gets information from array indexes
 
 
-Mesh generation logic
+    float[] GetParams(int i, int j)
 
-CreateShape();
 
-UpdateMesh();
 
+ #### void YOperator
 
+ Virtual method to allow customization of the specifics of the terrain height choices
 
-Collider initialization
 
-if (MC == null) MC = GetComponent<MeshCollider>();
+    protected virtual float YOperator(float inY)
 
-MC.sharedMesh = mesh;
 
 
+ #### void CreateUVs
 
-Flagged as finished initializing
+ Maps the texture coordinates to the newly generated terrain
 
-bInit = true;
 
-}
+    protected virtual void CreateUVs()
 
 
 
-public void AddSection() {
+ #### void CreateVerts
 
-if (!bInit) {
+ Creates the verticies of the terrain in a grid in x, z space and using perlin noise for the y height
 
-InitializeComp();
 
-}
+    protected virtual void CreateVerts() {
 
-}
 
 
+ #### void CreateTris
 
-Basic data structure for easy vert passing between chunks
+ Creates triangles for rendering from the vertex array
 
-public struct Side {
 
-public Vector3[] verts;
+    protected virtual void CreateTris() {
 
-public int[] i;
 
-public Direction sideName;
 
-}
+ #### void UpdateMesh
 
+ Safely regenerates terrain at runtime
 
 
-Main mesh creation logic
+    void UpdateMesh() {
 
-void CreateShape() {
 
-vertices = new Vector3[(partitions + 1)  (partitions + 1)]; Create square vertex container
 
-CreateSideContainers();
+ #### void OnDrawGizmos
 
-CreateVerts();
+ Unity engine event which is called for debugging purposes
 
-CreateTris();
+ Draws debugging icons on vertices 
 
-CreateUVs();
 
-}
-
-
-
-void CreateSideContainers() {
-
-sidedVertices = new Vector3[4][];
-
-sidedIndexs = new int[4][];
-
-
-
-for (int i = 0; i < 4; i++) {
-
-sidedIndexs[i] = new int[partitions + 1];
-
-sidedVertices[i] = new Vector3[partitions + 1];
-
-}
-
-}
-
-
-
-float[] GetParams(int i, int j)
-
-{
-
-float[] arr = new float[2];
-
-arr[0] = (((xSize  partitions)  i) + (gameObject.transform.position.x + constOffset))  scale;
-
-arr[1] = (((zSize  partitions)  j) + (gameObject.transform.position.z + constOffset))  scale;
-
-return arr;
-
-}
-
-
-
-protected virtual float YOperator(float inY)
-
-{
-
-return inY;
-
-}
-
-
-
-protected virtual void CreateUVs()
-
-{
-
-uvs = new Vector2[vertices.Length];
-
-for (int i = 0; i < vertices.Length; i++)
-
-{
-
-uvs[i] = new Vector2(vertices[i].xxSize, vertices[i].zzSize);
-
-}
-
-}
-
-
-
-protected virtual void CreateVerts() {
-
-int count0 = 0;
-
-int count1 = 0;
-
-int count2 = 0;
-
-int count3 = 0;
-
-
-
-int x = 0;
-
-for (int i = 0; i <= partitions; i++) {
-
-for (int j = 0; j <= partitions; j++) {
-
-
-
-float[] Params = GetParams(i, j);
-
-
-
-float y = Mathf.PerlinNoise(Params[0], Params[1])  severity;
-
-y = YOperator(y);
-
-
-
-
-
-Needs SaveLoad functionality to allow for static pre-runtime generated maps (SEED)
-
-
-    
+    private void OnDrawGizmos() {
 
 ### Foliage Class
 -------
 
+
+
+ ### Foliage
+
+ -------
+
+ Empty class for future custom foliage mesh generation
+
+
+    public class Foliage : MonoBehaviour
+
 ### GenerateFoliage Class
 -------
 
-                
 
-}
 
-else
+ ### GenerateFoliage
 
-{
+ -------
 
-foliageRenderers[i].enabled = false; Hide
+ Utilizes ObjectPools to create dynamic and procedural foliage on a TerrainSection
 
-}
 
-}
-
-}
-
-}
+    public class GenerateFoliage : MonoBehaviour
 
 
 
-public void initialize()
+ #### void LateUpdate
 
-{
+ Unity editor event called at the end of every frame
 
-if (foliageClass.GetComponent<MeshFilter>()) Check if using mesh
-
-{
-
-meshComp = foliageClass.GetComponent<MeshFilter>().sharedMesh; Get Mesh
+ Calculates whether each foliage instance is needed to be rendered based on Player position
 
 
-
- Calculate 3D model safe spawning radius (with pre-set offset
-    radius += Mathf.Max(meshComp.bounds.size.x  foliageClass.transform.localScale.x, meshComp.bounds.size.z  foliageClass.transform.localScale.z);
-
-                         
+    void LateUpdate()
 
 
 
-instantiateFoliageInstance(xVal, zVal, count);
+ #### void initialize
 
-count++;
-
-}
-
-}
+ Sets up foliage generation
 
 
-
-void ClearFoliage()
-
-{
-
-if (foliageObjs == null) return;
-
-for (int i = 0; i < fCount; i++)
-
-{
-
-foliagePool.disableObject(foliageObjs[i]);
-
-}
-
-fCount = 0;
-
-}
+    public void initialize()
 
 
 
-void instantiateFoliageInstance(float xVal, float zVal, int count)
+ #### void setFoliagePool
 
-{
+ Mutator method for allowing external allocation of an ObjectPool for foliage generation
 
-GameObject foliage = foliagePool.getObject();
 
-foliage.transform.position = new Vector3(xVal, generator.getYAtLocation(new Vector2(xVal, zVal)) + yOffset, zVal);
+    public void setFoliagePool(ObjectPool pool)
 
-foliage.transform.rotation = Quaternion.Euler(0, Random.Range(-180, 180), 0);
 
-foliageObjs[count] = foliage;
 
-foliageRenderers[count] = foliage.GetComponent<Renderer>();
+ #### void SpawnFoliage
 
-fCount++;
+ Instantiates foliage instances across the owning terrain area
 
-}
 
-}
+    void SpawnFoliage()
+
+
+
+ #### void ClearFoliage
+
+ Returns all foliage to its ObjectPool
+
+
+    void ClearFoliage()
+
+
+
+ #### void instantiateFoliageInstance
+
+ Creates a foliage instance from its ObjectPool
+
+
+    void instantiateFoliageInstance(float xVal, float zVal, int count)
 
 ### GenerateTree Class
 -------
 
-using System.Collections;
-
-using System.Collections.Generic;
-
-using UnityEngine;
 
 
+ ### Tree
 
-public class Tree : GenerateFoliage
+ -------
 
-{
+ Empty class for future custom foliage mesh generation
 
 
-
-}
+    public class Tree : GenerateFoliage
 
 ### BlockyTerrain Class
 -------
 
-using System.Collections;
-
-using System.Collections.Generic;
-
-using UnityEngine;
 
 
+ ### BlockyTerrain
 
-public class BlockyTerrain : GenerateTerrain
+ -------
 
-{
+ Class which adapts GenerateTerrain to provide descrete, perlin noise random terrain with sharp edges (blocky)
 
-public float BlockFactor = 0.1F;
+
+    public class BlockyTerrain : GenerateTerrain
 
 
 
-protected override float YOperator(float inY)
+ #### float YOperator
 
-{
+ An overriden method which sets the operation done on the terrain Y value
 
-float returnY = inY;
 
-returnY = BlockFactor;
-
-returnY = (int)(returnY);
-
-returnY = BlockFactor;
-
-return returnY;
-
-}
-
-}
+    protected override float YOperator(float inY)
 
 ### MazeGenerator Class
 -------
 
-using System.Collections;
 
-using System.Collections.Generic;
 
-using UnityEngine;
+ ### MazeGenerator
 
+ -------
 
+ Class which adapts the GenerateTerrain archetype to utilize a png image in order to construct maze-like structures
 
-public class MazeGenerator : GenerateTerrain
 
-{
+    public class MazeGenerator : GenerateTerrain
 
- EDITOR EXPOSED VALUE
-    [SerializeField] private float mazeHeight = 10;
 
-            
 
+ #### void setSourceTex
 
+ Mutator for the Texture2D value
 
-[HideInInspector] public bool hasFloor = true;
 
+    public void setSourceTex(Texture2D inTex) 
 
 
-private int oldVertLength = 0;
 
-private int TrueOldVertLength = 0;
+ #### int getSourceTextWidth
 
+ Accessor for the Texture2D width
 
 
-public void setSourceTex(Texture2D inTex) { sourceTex = inTex; }
+    public int getSourceTextWidth() 
 
-public int getSourceTextWidth() { return sourceTex.width  unitSize; }
 
-public int getSourceTextHeight() { return sourceTex.height  unitSize; }
 
+ #### int getSourceTextHeight
 
+ Accessor for the Texture2D height
 
-protected override void CreateVerts()
 
-{
+    public int getSourceTextHeight() 
 
-if (sourceTex == null) return;
 
-xSize = getSourceTextWidth();
 
-zSize = getSourceTextHeight();
+ #### void CreateVerts
 
+ Overriden method from GenerateTerrain which creates the baseplate and initializes maze generation
 
 
-if (hasFloor)
+    protected override void CreateVerts()
 
-{
 
-int x = 0;
 
-Generate a Flat Baseplate
+ #### void CreateUVs
 
-for (int i = 0; i <= partitions; i++)
+ Overriden method from GenerateTerrain which maps the texture coordinates to the generated terrain
 
-{
 
-for (int j = 0; j <= partitions; j++)
+    protected override void CreateUVs()
 
-{
 
-vertices[x] = new Vector3((xSize  partitions)  i, 0, (zSize  partitions)  j);
 
-x++;
+ #### void createBaseUVs
 
-}
+ Overriden method from GenerateTerrain which maps the base texture coordinates
 
-}
 
-}
+    private void createBaseUVs()
 
-TrueOldVertLength = vertices.Length;
 
-GenerateMaze();
 
-}
+ #### void createWallUVs
 
+ Overriden method from GenerateTerrain which maps the wall texture coordinates
 
 
-protected override void CreateUVs()
+    private void createWallUVs()
 
-{
 
-createBaseUVs(); Setup Baseplate Rendering
 
+ #### void CreateTris
 
+ Overriden method from GenerateTerrain which maps the vertex indecies together into graphical triangles for rendering
 
-createWallUVs(); Setup UVs for each wall face
 
+    protected override void CreateTris()
 
 
-Debug.Log(vertices.Length);
 
-}
+ #### void createTrianglesFromVertexIndex
 
+ Abstraction of triangle generation for range of vertex indecies
 
 
-private void createBaseUVs()
+    private void createTrianglesFromVertexIndex(int[] tris, int j  start tri index , int k  start vert index )
 
-{
 
-uvs = new Vector2[TrueOldVertLength];
 
-for (int i = 0; i < TrueOldVertLength; i++)
+ #### void GenerateMaze
 
-{
+ Utilizes helper method to generate a box mesh on the terrain
 
-uvs[i] = new Vector2(vertices[i].x  xSize, vertices[i].z  zSize);
+ in a corresponding place to each black pixel in the input image
 
-Debug.Log(vertices[i].x);
 
-Debug.Log(uvs[i].x
-    }
+    void GenerateMaze()
+
+
+
+ #### void GenerateBoxOnMesh
+
+ Helper method for GenerateMaze to create a box of specified size on the mesh
+
+
+    void GenerateBoxOnMesh(Vector3 topLeft, float x, float z)
 
