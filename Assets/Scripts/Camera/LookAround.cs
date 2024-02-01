@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
- * ### LookAround
- * -------
  * Simple class for player mouse directed camera
  */
 public class LookAround : MonoBehaviour

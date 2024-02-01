@@ -4,8 +4,6 @@ using UnityEngine;
 
 [RequireComponent(typeof(GenerateTerrain))]
 /**
- * ### GenerateFoliage
- * -------
  * Utilizes ObjectPools to create dynamic and procedural foliage on a TerrainSection
  */
 public class GenerateFoliage : MonoBehaviour
@@ -50,9 +48,9 @@ public class GenerateFoliage : MonoBehaviour
                 {
                     foliageRenderers[i].enabled = true; //Show
 
-                    // Rotate Sprites to face Camera
+                    /* Rotate Sprites to face Camera */
                     if (b2D) foliageObjs[i].transform.rotation = Camera.main.transform.rotation; 
-                    //
+                    /* * * * * * * * * * * * * * * * */
                 }
                 else
                 {
@@ -104,10 +102,10 @@ public class GenerateFoliage : MonoBehaviour
 
         for (int i = 0; i < foliageDensity; i++)
         {
-            // NEED TO CHANGE TO NON-OVERLAPPING RANDOM NUMBERS
+            /* NEED TO CHANGE TO NON-OVERLAPPING RANDOM NUMBERS */
             float xVal = Random.Range(0f, xSize) + gameObject.transform.position.x;
             float zVal = Random.Range(0f, zSize) + gameObject.transform.position.z;
-            //
+            /* * * * * * * * * * * * * * * * * * * * * * * * * */
 
             instantiateFoliageInstance(xVal, zVal, count);
             count++;

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
- * ### ObjectPool
- * -------
  * Implementation of an abstract object pool for efficient mass object management
  */
 public class ObjectPool : MonoBehaviour

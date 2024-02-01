@@ -4,14 +4,10 @@
 
 ## Agents
 
-### Agent Class
+### Agent
 -------
 
 
-
- #### Agent
-
- -----
 
  Class representing the simulation of a physical agent within the digital environment
 
@@ -36,7 +32,7 @@
  Checks the points in a 3x3 grid around the agent and sends that information to the local grid
 
 
-    int[][] ScanLocalArea()
+    public int[][] ScanArea(int[] center)
 
 
 
@@ -58,48 +54,25 @@
 
     void Update()
 
-### Goal Class
+### Goal
 -------
 
-### BroadcastGoal Class
+### BroadcastGoal
 -------
 
-### GroundedHeading Class
+### GroundedHeading
 -------
 
-### NearestGrounding Class
+### NearestGrounding
 -------
 
-### Waypoint Class
+### Waypoint
 -------
 
-### DynamicCoordinateGrid Class
+### DynamicCoordinateGrid
 -------
 
 
-
- #### MappingIDs
-
- -----
-
- A collection of labels for mapping to be used in grid location identification
-
- Undefined: Location has yet to be mapped
-
- Free: Location is traversable
-
- Full: Location is un-traversable
-
- Grounding: Location is traversable and contains a grounding which may be demonstrated
-
-
-    public enum MappingIDs { Undefined, Free, Full, Grounding }
-
-
-
- #### DynamicCoordinateGrid
-
- -----
 
  A data structure used to keep a locally valid coordinate grid for querying
 
@@ -140,7 +113,7 @@
  Debugging method which prints a grid representation to console
 
 
-    public void Print(float inverseMoveSpeed)
+    public void Print(float inverseMoveSpeed = 0.2f)
 
 
 
@@ -153,14 +126,54 @@
 
     private void Start()
 
-### QuadTree Class
+### MappingIDs
 -------
 
 
 
- #### QuadTree
+ A collection of labels for mapping to be used in grid location identification
 
- -----
+ Undefined: Location has yet to be mapped
+
+ Free: Location is traversable
+
+ Full: Location is un-traversable
+
+ Grounding: Location is traversable and contains a grounding which may be demonstrated
+
+
+    public enum MappingIDs { Undefined, Free, Full, Grounding }
+### NodeDepth
+-------
+
+
+
+ Struct for containing the node and depth information during recursive tree searches
+
+
+    public struct NodeDepth
+
+### NodeIDs
+-------
+
+
+
+ A collection of labels for nodes to be used in pathfinding
+
+ Undefined: Node was created on unmapped areas of the grid
+
+ Free: Node was created on a fully traversable area of the grid
+
+ Full: Node was created on a fully un-traversable area of the grid
+
+ Mixed: Node was created on an area of the grid with mixed traversable and un-traversabele space
+
+
+    public enum NodeIDs { Undefined, Free, Full, Mixed }
+### QuadTree
+-------
+
+
 
  A data structure class which interfaces with the DynamicCoordinateGrid to create a QuadTree for pathfinding
 
@@ -174,7 +187,34 @@
  Creates the physical QuadTree by initializing one base quad on the entire grid and recursivly partitioning that quad
 
 
-    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 1)
+    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f)
+
+
+
+ QuadTreeNode GetNode(Vector2)
+
+ Recursively finds the correct leaf node at the specified (X, Z) world location
+
+
+    public QuadTreeNode GetNode(Vector2 location)
+
+
+
+ #### QuadTreeNode GetFurthestFreeNodes(Vector2)
+
+ Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
+
+
+    public List<NodeDepth> GetFurthestFreeNodes(Vector2 location)
+
+
+
+ #### bool IsChild(QuadTreeNode, QuadTreeNode)
+
+ Checks if the first parameter is a child of the second in the QuadTree
+
+
+    public bool IsChild(QuadTreeNode potChild, QuadTreeNode parent)
 
 
 
@@ -205,33 +245,10 @@
 
     bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping)
 
-### QuadTreeNode Class
+### QuadTreeNode
 -------
 
 
-
- #### NodeIDs
-
- -----
-
- A collection of labels for nodes to be used in pathfinding
-
- Undefined: Node was created on unmapped areas of the grid
-
- Free: Node was created on a fully traversable area of the grid
-
- Full: Node was created on a fully un-traversable area of the grid
-
- Mixed: Node was created on an area of the grid with mixed traversable and un-traversabele space
-
-
-    public enum NodeIDs { Undefined, Free, Full, Mixed }
-
-
-
- #### QuadTreeNode
-
- -----
 
  A node representing one quad in the QuadTree. Used for pathfinding
 
@@ -256,41 +273,54 @@
 
     public void Print(float time)
 
-### GroundingMethod Class
--------
-
-### LabelAtMeeting Class
--------
-
-### LabelSpatialEntropy Class
--------
-
-### PathPlanner Class
+### Side
 -------
 
 
 
- #### PathPlanner
+ An Enum for easy readability of NSEW
 
- -----
+
+    public enum Side { N, S, E, W }
+### GroundingMethod
+-------
+
+### LabelAtMeeting
+-------
+
+### LabelSpatialEntropy
+-------
+
+### PathNode
+-------
+
+
+
+ Class for storing the A tree structure during pathfinding
+
+
+    public class PathNode
+
+### PathPlanner
+-------
+
+
 
  Class to compile data from local grids for pathfinding using QuadTrees
 
 
-    
+    public class PathPlanner
 
 
 
  #### bool CheckForValidPath(Vector2, DynamicCoordinateGrid)
 
- Uses the A algorithm to search for a valid path through the local grid's QuadTree
+ Uses the A star algorithm to search for a valid path through the local grid's QuadTree
 
  Returns based on ability to find a valid path
 
 
-    public List<Vector2> CheckForValidPath(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping)
-
-
+    public List<Vector2> CheckForValidPath(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
 
 
 
@@ -301,18 +331,14 @@
  Returns based on ability to conduct a move
 
 
-    public bool Move(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping)
+    public bool Move(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
 
 ## Camera
 
-### LookAround Class
+### LookAround
 -------
 
 
-
- ### LookAround
-
- -------
 
  Simple class for player mouse directed camera
 
@@ -341,19 +367,22 @@
 
     void Update()
 
-### PlayerMove Class
+### PlayerMove
 -------
+
+
+
+ Simple class for limited Player camera movement
+
+
+    public class PlayerMove : MonoBehaviour
 
 ## Generation
 
-### ObjectPool Class
+### ObjectPool
 -------
 
 
-
- ### ObjectPool
-
- -------
 
  Implementation of an abstract object pool for efficient mass object management
 
@@ -398,14 +427,10 @@
 
     public void disableObject(GameObject obj)
 
-### GenerateChunks Class
+### GenerateChunks
 -------
 
 
-
- ### GenerateChunks
-
- -------
 
  Class for managing terrain sections in a cohesive way procedurally
 
@@ -544,14 +569,10 @@ Terrain-specific valu
 
     void DestroyTerrainSection(GameObject terrain)
 
-### GenerateMazeChunks Class
+### GenerateMazeChunks
 -------
 
 
-
- ### GenerateMazeChunks
-
- -------
 
  Adaptation of the generic GenerateChunks for creating mazesrooms
 
@@ -567,19 +588,51 @@ Terrain-specific valu
 
     protected override void resizeChunks(GenerateTerrain terrainLogic)
 
-### GenerateTerrain Class
+### GenerateTerrain
 -------
 
 
-
- ### GenerateTerrain
-
- -------
 
  Class which handles the terrain generation for a specific TerrainSection within the array of terrain chunks
 
 
     public class GenerateTerrain : MonoBehaviour
+
+             
+
+
+
+ Side meshing verticie
+    protected Vector3[][] sidedVertices; Copied from verticies
+
+            
+
+
+
+ Main mesh vertecie
+    protected Vector3[] vertices;
+
+           
+
+
+
+private MeshCollider MC;
+
+private bool bInit = false;
+
+private int SEED = 12345678;
+
+
+
+ Start is called before the first frame update
+
+void Start() {
+
+
+
+}
+
+
 
 
 
@@ -718,28 +771,20 @@ Terrain-specific valu
 
     private void OnDrawGizmos() {
 
-### Foliage Class
+### Foliage
 -------
 
 
-
- ### Foliage
-
- -------
 
  Empty class for future custom foliage mesh generation
 
 
     public class Foliage : MonoBehaviour
 
-### GenerateFoliage Class
+### GenerateFoliage
 -------
 
 
-
- ### GenerateFoliage
-
- -------
 
  Utilizes ObjectPools to create dynamic and procedural foliage on a TerrainSection
 
@@ -756,6 +801,26 @@ Terrain-specific valu
 
 
     void LateUpdate()
+
+                
+
+}
+
+else
+
+{
+
+foliageRenderers[i].enabled = false; Hide
+
+}
+
+}
+
+}
+
+}
+
+
 
 
 
@@ -784,6 +849,20 @@ Terrain-specific valu
 
     void SpawnFoliage()
 
+                         
+
+
+
+instantiateFoliageInstance(xVal, zVal, count);
+
+count++;
+
+}
+
+}
+
+
+
 
 
  #### void ClearFoliage
@@ -802,28 +881,20 @@ Terrain-specific valu
 
     void instantiateFoliageInstance(float xVal, float zVal, int count)
 
-### GenerateTree Class
+### GenerateTree
 -------
 
 
-
- ### Tree
-
- -------
 
  Empty class for future custom foliage mesh generation
 
 
     public class Tree : GenerateFoliage
 
-### BlockyTerrain Class
+### BlockyTerrain
 -------
 
 
-
- ### BlockyTerrain
-
- -------
 
  Class which adapts GenerateTerrain to provide descrete, perlin noise random terrain with sharp edges (blocky)
 
@@ -839,19 +910,29 @@ Terrain-specific valu
 
     protected override float YOperator(float inY)
 
-### MazeGenerator Class
+### MazeGenerator
 -------
 
 
-
- ### MazeGenerator
-
- -------
 
  Class which adapts the GenerateTerrain archetype to utilize a png image in order to construct maze-like structures
 
 
     public class MazeGenerator : GenerateTerrain
+
+            
+
+
+
+[HideInInspector] public bool hasFloor = true;
+
+
+
+private int oldVertLength = 0;
+
+private int TrueOldVertLength = 0;
+
+
 
 
 

@@ -54,26 +54,30 @@ def scanForVariables(line, newFileContents):
 def scanForFunctions(line, newFileContents):
     return newFileContents
 
+def checkForCodeFile(line):
+    supportedExtensions = ["cs", "h", "java"]
+    if (len(line.split(".")) != 2): return False
+    for i in range(len(supportedExtensions)):
+        if (line.split(".")[1] == supportedExtensions[i]): return True
+    
+
 # MAIN LOOP FOR PROCESSING SOURCE CODE
 bScanning = False
 bOneMoreLine = False
 endSearchTerm = '*/'
 currDir = ""
 for root, dirs, files in os.walk(sourceFolder):
-    # ADD EACH DIRECTORY TO THE DOCUMENTATION (NEEDS FIX SO FILES ARE UNDER CORRECT DIRECTORY)
-    # for dir in dirs:
-    #     newFileContents += "## " + dir + "\n\n"
     for file in files:
         print(root)
-        if len(root.split('/')) > 0 and currDir != root.split("/")[len(root.split('/')) - 1].split("\\")[0]:
-            currDir = root.split("/")[len(root.split('/')) - 1]
+        if len(root.split('/')) > 0 and currDir != root.split("/")[len(root.split('/')) - 1].split("\\")[0]: # Fix to plain english
+            currDir = root.split("/")[len(root.split('/')) - 1] # Fix to plain english
             newFileContents += "## " + currDir + "\n\n"
             print(currDir)
 
-        if file.split('.')[1] == "cs" and len(file.split('.')) == 2:
+        if checkForCodeFile(file): # Ensures only reading source code files and not binary/config
 
             # ADD FILE NAME TO DOCUMENTATION
-            newFileContents += "### " + file.split('.')[0] + " Class\n"
+            newFileContents += "### " + file.split('.')[0] + "\n"
             newFileContents += "-------\n\n"
 
             # OPEN RELEVENT FILE FOR EDITING
@@ -117,7 +121,7 @@ for root, dirs, files in os.walk(sourceFolder):
 
                 if not bScanning:
                     # SCAN AND ADD ALL VARIABLE DEFS TO DOCUMENTATION
-                    #newFileContents = scanForVariables(line, newFileContents)
+                    # ToDo
 
                     # SCAN AND ADD ALL FUNCTION NAMES TO DOCUMENTATION
                     newFileContents = scanForFunctions(line, newFileContents)

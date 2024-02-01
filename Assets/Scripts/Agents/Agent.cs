@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
- * #### Agent
- * -----
  * Class representing the simulation of a physical agent within the digital environment
  */
 public class Agent : MonoBehaviour
 {
     public float movementSpeed = 1;
+    public float AgentSize = 1;
 
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
     private Vector2 initLocation; //TESTING
     private Vector3 currLocation;
     private Vector3 movementDirection = Vector3.zero;
+    private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
+    private int visitedCount = 0;
 
     /**
      * #### void Start()
@@ -24,21 +25,22 @@ public class Agent : MonoBehaviour
      */
     void Start()
     {
-        mapping = GetComponent<DynamicCoordinateGrid>();
-        mapping.Origin = transform.position;
-        mapping.Move(Vector2.zero, ScanLocalArea(), 1/movementSpeed);
-
         planner = new PathPlanner();
 
+        mapping = GetComponent<DynamicCoordinateGrid>();
+        mapping.Origin = transform.position;
+        mapping.Init(this);
         initLocation = new Vector2(transform.position.x, transform.position.z);
         currLocation = transform.position;
+
+        Debug.Log("TEST");
     }
 
     /**
      * #### int[][] ScanLocalArea()
      * Checks the points in a 3x3 grid around the agent and sends that information to the local grid
      */
-    int[][] ScanLocalArea()
+    public int[][] ScanArea(int[] center)
     {
         int[][] localMap = new int[3][];
         for (int i = 0; i < 3; i++)
@@ -49,7 +51,7 @@ public class Agent : MonoBehaviour
         {
             for (int j = -1; j <= 1; j++)
             {
-                if (ScanDownAtXZ(j + (int)gameObject.transform.position.x, -i + (int)gameObject.transform.position.z) == 0)
+                if (ScanDownAtXZ(j + center[0], -i + center[1]) == 0)
                 {
                     localMap[i + 1][j + 1] = (int)MappingIDs.Free;
                 }
@@ -70,6 +72,7 @@ public class Agent : MonoBehaviour
     {
         RaycastHit hit;
         int layerMask = 1 << 8;
+        //Debug.DrawLine(new Vector3(x, 5, z), new Vector3(x, -5, z), Color.red, 0.2f);
         if (Physics.Raycast(new Vector3(x, 100, z), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, layerMask))
         {
             return hit.point.y;
@@ -90,24 +93,67 @@ public class Agent : MonoBehaviour
         count += Time.deltaTime;
         if (count > 1 && !planner.OnPath)
         {
+            Vector3 temp = Vector3.zero;
             var rand = Random.Range(0, 4);
             switch (rand)
             {
                 case 0:
-                    movementDirection = new Vector3(0, 0, 1);
+                    temp = new Vector3(0, 0, 1f);
                     break;
                 case 1:
-                    movementDirection = new Vector3(0, 0, -1);
+                    temp = new Vector3(0, 0, -1f);
                     break;
                 case 2:
-                    movementDirection = new Vector3(-1, 0, 0);
+                    temp = new Vector3(-1f, 0, 0);
                     break;
                 case 3:
-                    movementDirection = new Vector3(1, 0, 0);
+                    temp = new Vector3(1f, 0, 0);
                     break;
             }
-            
+
             count = 0;
+            QuadTree tree = new QuadTree();
+            tree.Construct(mapping, mapping.Origin, 0);
+            List<NodeDepth> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
+            QuadTreeNode node;
+            /*if (nodes.Count != 0) node = nodes[nodes.Count - 1].node;
+            else node = null;*/
+
+            if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
+            {
+                Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
+                node = null;
+                visitedNodes.Clear();
+                visitedCount = 0;
+            }
+            else
+            {
+                while (visitedNodes.Contains(nodes[visitedCount].node) || nodes[visitedCount].node == tree.GetNode(new Vector2(transform.position.x, transform.position.z)))
+                {
+                    visitedCount++;
+                    if (visitedCount == nodes.Count)
+                    {
+                        visitedNodes.Clear();
+                        visitedCount = 0;
+                        break;
+                    }
+                }
+                node = nodes[visitedCount].node;
+                visitedNodes.Add(node);
+                visitedCount++;
+            }
+
+            if (node == null)
+            {
+                planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 0.2f);
+            }
+            else
+            {
+                Vector2 init = new Vector2(transform.position.x, transform.position.z);
+                Vector2 destination = new Vector2(node.x + AgentSize / 2, node.y + AgentSize / 2);
+                float dist = (destination - init).magnitude;
+                planner.Move(init, destination, mapping, dist / movementSpeed);
+            }
         }
         else if (planner.OnPath)
         {
@@ -117,7 +163,7 @@ public class Agent : MonoBehaviour
                 planner.OnPath = false;
                 planner.currentPath = null;
                 movementDirection = Vector3.zero;
-                count = -5;
+                count = 1;
             }
             else if (transform.position.x < planner.currentPath[progress].x + tolerance && transform.position.x > planner.currentPath[progress].x - tolerance &&
                 transform.position.z < planner.currentPath[progress].y + tolerance && transform.position.z > planner.currentPath[progress].y - tolerance)
@@ -130,44 +176,19 @@ public class Agent : MonoBehaviour
                 movementDirection.Normalize();
             }
         }
-
-        gameObject.transform.position += (movementDirection * Time.deltaTime * movementSpeed);
-
-        if ((int)transform.position.x != (int)currLocation.x || (int)transform.position.z != (int)currLocation.z)
+        else
         {
-            mapping.Move(new Vector2((int)transform.position.x - (int)currLocation.x, (int)transform.position.z - (int)currLocation.z), ScanLocalArea(), 1/movementSpeed);
+            movementDirection = Vector3.zero;
         }
+
+        //gameObject.transform.position += (movementDirection * Time.deltaTime * movementSpeed);
+        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.deltaTime * movementSpeed)), this);
 
         if (Input.GetKeyDown(KeyCode.G))
         {
-            // TEST PATHFINDING //
-            if (!planner.OnPath)
-            {
-                QuadTree test = new QuadTree();
-                test.Construct(mapping, mapping.Origin);
-                planner.Move(new Vector2(transform.position.x, transform.position.z), initLocation, mapping);
-            }
-
-            // TEST NEIGHBORS //
-            /*QuadTree test = new QuadTree();
-            test.Construct(mapping, mapping.Origin);
-            QuadTreeNode newNode = test.GetNode(new Vector2(transform.position.x, transform.position.z));
-            if (newNode == null) Debug.Log("NOT IN A QUADNODE");
-            List<QuadTreeNode> neighbors = newNode.GetDirections();
-            if (neighbors != null)
-                for (int i = 0; i < neighbors.Count; i++)
-                {
-                    if (neighbors[i] != null)
-                    {
-                        neighbors[i].colorOverride = Color.magenta;
-                        neighbors[i].Print();
-                    }
-                }
-            newNode.colorOverride = Color.black;
-            newNode.Print();*/
-
-            // TEST NEIGHBOR MAIN EDGE CASE //
-            //Write a unit test for the case where the depths must re-allocate
+            Vector2 loc = new Vector2(300, 351);
+            mapping.Move(loc, this, true, planner); //Teleport
+            Debug.Log("Welcome to your new destination at: " + loc);
         }
 
         currLocation = transform.position;

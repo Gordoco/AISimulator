@@ -3,27 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
-* #### NodeIDs
-* -----
-* A collection of labels for nodes to be used in pathfinding
-* Undefined: Node was created on unmapped areas of the grid
-* Free: Node was created on a fully traversable area of the grid
-* Full: Node was created on a fully un-traversable area of the grid
-* Mixed: Node was created on an area of the grid with mixed traversable and un-traversabele space
-*/
-public enum NodeIDs { Undefined, Free, Full, Mixed }
-public enum Side { N, S, E, W }
-
-public struct NodeDepth
-{
-    public NodeDepth(QuadTreeNode inNode, int indepth) { node = inNode; depth = indepth; }
-    public QuadTreeNode node;
-    public int depth;
-}
-
-/**
- * #### QuadTreeNode
- * -----
  * A node representing one quad in the QuadTree. Used for pathfinding
  */
 public class QuadTreeNode
@@ -96,6 +75,7 @@ public class QuadTreeNode
     public List<NodeDepth> GetChildren(int depth = 0)
     {
         var arr = new List<NodeDepth>();
+        if (NodeIsLeaf()) return arr;
         if (!NE.NodeIsLeaf()) arr.AddRange(NE.GetChildren(depth + 1));
         else arr.Add(new NodeDepth(NE, depth));
         if (!NW.NodeIsLeaf()) arr.AddRange(NW.GetChildren(depth + 1));
@@ -104,6 +84,17 @@ public class QuadTreeNode
         else arr.Add(new NodeDepth(SE, depth));
         if (!SW.NodeIsLeaf()) arr.AddRange(SW.GetChildren(depth + 1));
         else arr.Add(new NodeDepth(SW, depth));
+        return arr;
+    }
+
+    public List<NodeDepth> GetFreeChildren(int depth = 0)
+    {
+        List<NodeDepth> children = GetChildren(depth);
+        List<NodeDepth> arr = new List<NodeDepth>();
+        for (int i = 0; i < children.Count; i++)
+        {
+            if (children[i].node.nodeType == NodeIDs.Free) arr.Add(children[i]);
+        }
         return arr;
     }
 

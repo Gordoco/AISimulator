@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ * Simple class for limited Player camera movement
+ */
 public class PlayerMove : MonoBehaviour
 {
     public float speed = 6.0f;

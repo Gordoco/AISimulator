@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
- * ### BlockyTerrain
- * -------
  * Class which adapts GenerateTerrain to provide descrete, perlin noise random terrain with sharp edges (blocky)
  */
 public class BlockyTerrain : GenerateTerrain

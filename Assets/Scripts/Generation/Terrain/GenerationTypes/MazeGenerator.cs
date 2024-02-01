@@ -3,18 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /**
- * ### MazeGenerator
- * -------
  * Class which adapts the GenerateTerrain archetype to utilize a png image in order to construct maze-like structures
  */
 public class MazeGenerator : GenerateTerrain
 {
-    // EDITOR EXPOSED VALUES
+    /* EDITOR EXPOSED VALUES */
     [SerializeField] private float mazeHeight = 10;
     [SerializeField] private int unitSize = 10;
 
     [SerializeField] private Texture2D sourceTex;
-    //
+    /* * * * * * * * * * * * */
 
     [HideInInspector] public bool hasFloor = true;
 

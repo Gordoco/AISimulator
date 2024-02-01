@@ -4,8 +4,6 @@ using UnityEngine;
 
 
 /**
- * ### GenerateMazeChunks
- * -------
  * Adaptation of the generic GenerateChunks for creating mazes/rooms
  */
 public class GenerateMazeChunks : GenerateChunks

@@ -4,15 +4,13 @@ using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter)), RequireComponent(typeof(MeshCollider))]
 /**
- * ### GenerateTerrain
- * -------
  * Class which handles the terrain generation for a specific TerrainSection within the array of terrain chunks
  */
 public class GenerateTerrain : MonoBehaviour
 {
     Mesh mesh;
 
-    // Configuration Variables
+    /* Configuration Variables */
     public int xSize = 100;
     public int zSize = 100;
     public int constOffset = 222;
@@ -25,18 +23,18 @@ public class GenerateTerrain : MonoBehaviour
 
     public int id;
     public GenerateFoliage[] foliageGenerators;
-    //
+    /* * * * * * * * * * * * * */
 
-    // Side meshing verticies
+    /* Side meshing verticies */
     protected Vector3[][] sidedVertices; //Copied from verticies
     protected int[][] sidedIndexs; //Matched to indecies in verticies
-    //
+    /* * * * * * * * * * * * */
 
-    // Main mesh vertecies
+    /* Main mesh vertecies */
     protected Vector3[] vertices;
     protected int[] triangles;
     protected Vector2[] uvs;
-    //
+    /* * * * * * * * * * * */
 
     private MeshCollider MC;
     private bool bInit = false;

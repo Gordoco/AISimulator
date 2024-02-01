@@ -12,8 +12,6 @@ public enum Direction {
 
 [ExecuteInEditMode]
 /**
- * ### GenerateChunks
- * -------
  * Class for managing terrain sections in a cohesive way procedurally
  */
 public class GenerateChunks : MonoBehaviour
