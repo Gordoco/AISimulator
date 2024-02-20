@@ -21,7 +21,7 @@ def removeMarkdownProblemCharacters(line):
     newLine = newLine.replace('/', '')
     return newLine
 
-newFile = open(removeMarkdownProblemCharacters(projectName) + "_README.md", "w")
+newFile = open(removeMarkdownProblemCharacters(projectName) + "_DOCS.md", "w")
 newFileContents = templateString
 
 # LANGUAGE SPECIFIC LIST OF COMMENT STRINGS

@@ -17,13 +17,13 @@ public class Agent : MonoBehaviour
     private Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
+    private bool bAwake = false;
 
     /**
-     * #### void Start()
-     * Unity event which runs at initialization.
+     * #### void Init()
      * Initializes a 3x3 re-allocatable grid
      */
-    void Start()
+    public void Init()
     {
         planner = new PathPlanner();
 
@@ -32,6 +32,7 @@ public class Agent : MonoBehaviour
         mapping.Init(this);
         initLocation = new Vector2(transform.position.x, transform.position.z);
         currLocation = transform.position;
+        bAwake = true;
 
         Debug.Log("TEST");
     }
@@ -90,6 +91,7 @@ public class Agent : MonoBehaviour
      */
     void Update()
     {
+        if (!bAwake) return;
         count += Time.deltaTime;
         if (count > 1 && !planner.OnPath)
         {

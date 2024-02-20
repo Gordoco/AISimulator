@@ -9,6 +9,6 @@ public class ReactiveCollisionPrevention
 {
     public ReactiveCollisionPrevention()
     {
-
+        Debug.Log("Created prevention object");
     }
 }

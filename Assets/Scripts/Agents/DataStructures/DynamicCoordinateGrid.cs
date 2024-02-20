@@ -166,6 +166,22 @@ public class DynamicCoordinateGrid : MonoBehaviour
 
     public void Init(Agent owner)
     {
+        gridCorner[0] = -1;
+        gridCorner[1] = -1;
+        //Initialize start of grid
+        grid = new List<List<int>>();
+        for (int i = 0; i < 3; i++)
+        {
+            grid.Add(new List<int>());
+            for (int j = 0; j < 3; j++)
+            {
+                grid[i].Add((int)MappingIDs.Undefined);
+            }
+        }
+        localOrigin = new Vector2(0, 0);
+        width = 3;
+        height = 3;
+
         width = grid[0].Count;
         height = grid.Count;
         int[] intVect = { (int)owner.gameObject.transform.position.x, (int)owner.gameObject.transform.position.z };
@@ -177,10 +193,10 @@ public class DynamicCoordinateGrid : MonoBehaviour
      * #### Vector2 GetConversionFactor()
      * Returns the x and y conversion values to go from array index to object space
      */
-    public Vector2 GetConversionFactor() 
+    public Vector2 GetConversionFactor()
     {
         if ((int)currentLocation.x + (int)localOrigin.x < 0 || (int)currentLocation.y + (int)localOrigin.y < 0) Debug.Log("ERRORRORORORO");
-        return new Vector2((int)currentLocation.x + (int)localOrigin.x, (int)currentLocation.y + (int)localOrigin.y); 
+        return new Vector2((int)currentLocation.x + (int)localOrigin.x, (int)currentLocation.y + (int)localOrigin.y);
     }
 
     public Vector3 toVector3(float y, Vector2 input)
@@ -228,7 +244,7 @@ public class DynamicCoordinateGrid : MonoBehaviour
         QuadTreeNode myNode = QT.GetNode(new Vector2(transform.position.x, transform.position.z));
         List<QuadTreeNode> neighbors = null;
         if (myNode != null) neighbors = myNode.GetDirections();
-        if (neighbors != null) 
+        if (neighbors != null)
             for (int i = 0; i < neighbors.Count; i++)
             {
                 if (neighbors[i] != null)
@@ -242,34 +258,5 @@ public class DynamicCoordinateGrid : MonoBehaviour
             myNode.colorOverride = Color.black;
             myNode.Print(inverseMoveSpeed);
         }
-    }
-
-    /**
-     * #### void Start()
-     * Unity event which runs at initialization.
-     * Initializes a new coordinate grid with dimensions 3x3
-     */
-    private void Start()
-    {
-        gridCorner[0] = -1;
-        gridCorner[1] = -1;
-        //Initialize start of grid
-        grid = new List<List<int>>();
-        for (int i = 0; i < 3; i++)
-        {
-            grid.Add(new List<int>());
-            for (int j = 0; j < 3; j++)
-            {
-                grid[i].Add((int)MappingIDs.Undefined);
-            }
-        }
-        localOrigin = new Vector2(0, 0);
-        width = 3;
-        height = 3;
-    }
-
-    private void Update()
-    {
-        //Print(Time.deltaTime);
     }
 }
