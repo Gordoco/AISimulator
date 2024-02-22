@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 1;
+    public int MinSize = 2;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -41,20 +41,8 @@ public class QuadTree
      */
     public List<NodeDepth> GetFurthestFreeNodes(Vector2 location)
     {
-        /*float furthest = 0;
-        QuadTreeNode furNode = null;*/
         List<NodeDepth> children = root.GetFreeChildren();
-        /*for (int i = 0; i < children.Count; i++)
-        {
-            if (children[i].node.nodeType != NodeIDs.Free) continue;
-            if ((children[i].node.GetCenterPoint() - location).magnitude > furthest)
-            {
-                furthest = (children[i].node.GetCenterPoint() - location).magnitude;
-                furNode = children[i].node;
-            }
-        }*/
         children.Sort((a, b) => a.CompareTo(b, location));
-        //if (furNode == GetNode(location)) return null;
         return children;
     }
 
