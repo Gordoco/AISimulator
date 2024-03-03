@@ -21,6 +21,8 @@ public class QuadTreeNode
 
     public int offset = 0;
 
+    public int depth = 0;
+
     public Color colorOverride = Color.clear;
     public float yOverride = 0;
 
@@ -241,8 +243,8 @@ public class QuadTreeNode
         if (SE != null) SE.Print(time);
         if (SE == null && SW == null && NE == null && NW == null)
         {
-            float tx = x - 0.5f;
-            float ty = y - 0.5f;
+            float tx = x;// - 0.5f;
+            float ty = y;// - 0.5f;
             int up = 1 + (int)yOverride;
 
             Color quadCol;
