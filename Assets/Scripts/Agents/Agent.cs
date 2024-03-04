@@ -147,14 +147,14 @@ public class Agent : MonoBehaviour
 
             if (node == null)
             {
-                planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 0.2f);
+                planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 2);
             }
             else
             {
                 Vector2 init = new Vector2(transform.position.x, transform.position.z);
                 Vector2 destination = new Vector2(node.x + AgentSize / 2, node.y + AgentSize / 2);
                 float dist = (destination - init).magnitude;
-                planner.Move(init, destination, mapping, dist / movementSpeed);
+                planner.Move(init, destination, mapping, 0.75f/*dist / movementSpeed*/);
             }
         }
         else if (planner.OnPath)

@@ -59,6 +59,18 @@ public class QuadTree
     }
 
     /**
+     * List<QuadTreeNode> GetLeaves()
+     * Method to return all the leaves of the quad tree for path finding graph construction
+     */
+    public List<QuadTreeNode> GetLeaves()
+    {
+        List<NodeDepth> nodeDepths = root.GetChildren();
+        List<QuadTreeNode> leaves = new List<QuadTreeNode>();
+        for (int i = 0; i < nodeDepths.Count; i++) leaves.Add(nodeDepths[i].node);
+        return leaves;
+    }
+
+    /**
      * #### bool IsChild(QuadTreeNode, QuadTreeNode)
      * Checks if the first parameter is a child of the second in the QuadTree
      */
@@ -92,21 +104,25 @@ public class QuadTree
         {
             node.SW = new QuadTreeNode(node.x, node.y, node.w / 2, node.h / 2);
             node.SW.nodeLoc = 3;
+            node.SW.depth = node.depth + 1;
             node.SW.parent = node;
             node.SW.tree = this;
 
             node.SE = new QuadTreeNode(node.x + node.w / 2, node.y, node.w / 2, node.h / 2);
             node.SE.nodeLoc = 2;
+            node.SE.depth = node.depth + 1;
             node.SE.parent = node;
             node.SE.tree = this;
 
             node.NW = new QuadTreeNode(node.x, node.y + node.h / 2, node.w / 2, node.h / 2);
             node.NW.nodeLoc = 1;
+            node.NW.depth = node.depth + 1;
             node.NW.parent = node;
             node.NW.tree = this;
 
             node.NE = new QuadTreeNode(node.x + node.w / 2, node.y + node.h / 2, node.w / 2, node.h / 2);
             node.NE.nodeLoc = 0;
+            node.NE.depth = node.depth + 1;
             node.NE.parent = node;
             node.NE.tree = this;
 
