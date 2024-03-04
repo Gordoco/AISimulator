@@ -59,6 +59,18 @@ public class QuadTree
     }
 
     /**
+     * List<QuadTreeNode> GetLeaves()
+     * Method to return all the leaves of the quad tree for path finding graph construction
+     */
+    public List<QuadTreeNode> GetLeaves()
+    {
+        List<NodeDepth> nodeDepths = root.GetChildren();
+        List<QuadTreeNode> leaves = new List<QuadTreeNode>();
+        for (int i = 0; i < nodeDepths.Count; i++) leaves.Add(nodeDepths[i].node);
+        return leaves;
+    }
+
+    /**
      * #### bool IsChild(QuadTreeNode, QuadTreeNode)
      * Checks if the first parameter is a child of the second in the QuadTree
      */

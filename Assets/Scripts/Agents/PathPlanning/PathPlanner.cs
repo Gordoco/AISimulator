@@ -36,112 +36,22 @@ public class PathPlanner
     {
         List<Vector2> path = new List<Vector2>();
         List<QuadTreeNode> nodes = new List<QuadTreeNode>();
-        Vector2 currentLocation = initialLocation;
 
         QuadTree tree = new QuadTree();
         tree.Construct(mapping, mapping.Origin, time);
 
-        PathNode currentNode = new PathNode(0, null, tree.GetNode(initialLocation));
-        PathNode startNode = currentNode;
-        PathNode completePath = null;
-        QuadTreeNode endNode = tree.GetNode(location);
-        //Debug.Log(endNode);
-        if (endNode == null) return new PathInfo(path, null);
-
-        if (currentNode.node == endNode)
+        GenericDigraph graph = GenerateGraphFromQuadTree(initialLocation, location, tree);
+        List<int> pathIndecies = GenericAStar(graph, time, 1, false);
+        if (pathIndecies == null)
         {
-            path.Add(initialLocation);
-            path.Add(location);
-            path.Add(startNode.node.GetCenterPoint());
-            path.Add(endNode.GetCenterPoint());
-            nodes.Add(startNode.node);
-            return new PathInfo(path, nodes);
+            Debug.Log("ERROR: Invalid Input to AStar");
+        }
+        for (int i = 0; i < pathIndecies.Count; i++)
+        {
+            path.Add(graph.GetVertex(pathIndecies[i]));
+            if (i > 0 && i < pathIndecies.Count - 1) nodes.Add(tree.GetNode(graph.GetVertex(pathIndecies[i])));
         }
 
-        List<PathNode> openList = new List<PathNode>();
-        List<PathNode> closedList = new List<PathNode>();
-
-        openList.Add(currentNode);
-
-        int MAX_ATTEMPTS = 10000;
-        while (openList.Count > 0 && MAX_ATTEMPTS > 0)
-        {
-            MAX_ATTEMPTS--;
-            //Consider Node with lowest F value
-            float lowestF = Mathf.Infinity;
-            for (int i = 0; i < openList.Count; i++)
-            {
-                if (openList[i].f < lowestF) lowestF = openList[i].f;
-                currentNode = openList[i];
-            }
-            openList.Remove(currentNode);
-
-            List<QuadTreeNode> neighborNodes = currentNode.node.GetDirections();
-            for (int i = 0; i < neighborNodes.Count; i++)
-            {
-                if (neighborNodes[i].nodeType != NodeIDs.Free) continue;
-                PathNode neighbor = new PathNode(0, currentNode, neighborNodes[i]);
-
-                if (neighbor.node == endNode)
-                {
-                    completePath = neighbor;
-                    MAX_ATTEMPTS = 0;
-                    break;
-                }
-
-                neighbor.g = currentNode.g + Mathf.Pow(currentNode.node.GetCenterPoint().x - neighbor.node.GetCenterPoint().x, 2) + Mathf.Pow(currentNode.node.GetCenterPoint().y - neighbor.node.GetCenterPoint().y, 2);
-                float neighborh = Mathf.Pow(location.x - neighbor.node.GetCenterPoint().x, 2) + Mathf.Pow(location.y - neighbor.node.GetCenterPoint().y, 2);
-
-                neighbor.f = neighbor.g + neighborh;
-
-                bool shouldContinue = false;
-                for (int j = 0; j < openList.Count; j++)
-                {
-                    if (openList[j].node == neighbor.node && openList[j].f < neighbor.f)
-                    {
-                        shouldContinue = true;
-                        break;
-                    }
-                }
-                if (shouldContinue) continue;
-
-                for (int j = 0; j < closedList.Count; j++)
-                {
-                    if (closedList[j].node == neighbor.node && closedList[j].f < neighbor.f)
-                    {
-                        shouldContinue = true;
-                        break;
-                    }
-                }
-                if (shouldContinue) continue;
-
-                openList.Add(neighbor);
-            }
-            closedList.Add(currentNode);
-        }
-
-        if (completePath == null) return new PathInfo(new List<Vector2>(0), null);
-        else
-        {
-            path.Insert(0, location);
-            Vector3 Location = mapping.toVector3(2, location);
-            //completePath = completePath.parent; //Skips Center of node containing location
-
-            while (completePath != null && completePath.parent != null)
-            {
-                path.Insert(0, completePath.node.GetCenterPoint());
-                nodes.Insert(0, completePath.node);
-
-                /*DEBUG*/
-                //Debug.DrawLine(Location, mapping.toVector3(0.5f, completePath.node.GetCenterPoint()), Color.blue, 2f);
-                /* - - - - - - */
-
-                Location = mapping.toVector3(0.5f, completePath.node.GetCenterPoint());
-                completePath = completePath.parent;
-            }
-            path.Insert(0, initialLocation);
-            
-        }
         return new PathInfo(path, nodes);
     }
 
@@ -151,8 +61,9 @@ public class PathPlanner
      * and the last element is the end of the desired path.
      * Returns a list of vertex indecies describing the calculated path.
      */
-    private List<int> GenericAStar(GenericDigraph graph, float time = 0f, float height = 1)
+    private List<int> GenericAStar(GenericDigraph graph, float time = 0f, float height = 1, bool shouldPrint = false)
     {
+        if (graph.GetNumVertices() <= 0) return null;
         List<int> path = new List<int>();
         List<AStarNode> openList = new List<AStarNode>();
         List<AStarNode> closedList = new List<AStarNode>();
@@ -205,7 +116,7 @@ public class PathPlanner
         while (finalNode != null)
         {
             path.Insert(0, graph.GetVertexIndex(finalNode.value));
-            if (finalNode.parent != null) Debug.DrawLine(new Vector3(finalNode.value.x, height, finalNode.value.y), new Vector3(finalNode.parent.value.x, height, finalNode.parent.value.y), Color.magenta, time);
+            if (finalNode.parent != null && shouldPrint) Debug.DrawLine(new Vector3(finalNode.value.x, height, finalNode.value.y), new Vector3(finalNode.parent.value.x, height, finalNode.parent.value.y), Color.magenta, time);
             finalNode = finalNode.parent;
         }
         return path;
@@ -220,16 +131,129 @@ public class PathPlanner
         List<Vector2> arr = new List<Vector2>();
 
         GenericDigraph graph = GenerateGraphFromQuadTreePath(pathInfo);
-        //graph.Print(1, time);
+        graph.Print(1, time);
 
         //Run A* on directed graph created above
-        List<int> vertexIndecies = GenericAStar(graph, time);
+        List<int> vertexIndecies = GenericAStar(graph, time, 1, false);
         for (int i = 0; i < vertexIndecies.Count; i++) arr.Add(graph.GetVertex(vertexIndecies[i]));
 
         //Do Visibility Checks to Simplify Path Geometry
-
+        arr = VisibilitySimplification(pathInfo, arr, true, time, 1);
 
         return arr;
+    }
+
+    /**
+     * List<Vector2> VisibilitySimplification(PathInfo, List<Vector2>)
+     * Method which performs "visibility" checks on path segments and removes unessesary points which don't affect path validity
+     * Specifically, removes points which, when skipped, allow for the path to remain within the same quads as before.
+     */
+    private List<Vector2> VisibilitySimplification(PathInfo originalPath, List<Vector2> pathPoints, bool bShouldPrint = false, float time = 0.2f, float height = 1)
+    {
+        List<Vector2> simplifiedPath = new List<Vector2>();
+        if (pathPoints.Count == 2) return pathPoints; //No simplification possible
+
+        //Debugging error message
+        if (pathPoints.Count > originalPath.nodes.Count + 1) Debug.Log("ERROR: Improper Path Length || Num Nodes: " + originalPath.nodes.Count + " Num Points: " + pathPoints.Count);
+
+        int lastVisiblePoint = 0;
+        int lastAddedPoint = 0;
+        for (int i = 0; i < pathPoints.Count; i++)
+        {
+            int i1 = -1;
+            int i2 = -1;
+            for (int k = 0; k < originalPath.nodes.Count; k++)
+            {
+                if (originalPath.nodes[k].CheckIfWithin(pathPoints[lastVisiblePoint])) { i1 = k; }
+                if (originalPath.nodes[k].CheckIfWithin(pathPoints[i])) { i2 = k; }
+            }
+
+            if (i2 - i1 == 0)
+            {
+                simplifiedPath.Add(pathPoints[i]);
+                lastAddedPoint = i;
+            }
+
+            for (int k = i1; k < (i2-i1) - 1; k++)
+            {
+                Vector2[] edge = GetEdgePoints(originalPath.nodes[k], originalPath.nodes[k+1]);
+                Vector2 intersection;
+                if (!Intersects(pathPoints[lastVisiblePoint], pathPoints[i], edge[0], edge[1], out intersection))
+                {
+                    simplifiedPath.Add(pathPoints[i - 1]);
+                    lastVisiblePoint = lastAddedPoint;
+                    lastAddedPoint = i - 1;
+                    break;
+                }
+            }
+
+            if (i == pathPoints.Count - 1) simplifiedPath.Add(pathPoints[i]);
+        }
+
+        if (bShouldPrint)
+        {
+            for (int i = 1; i < simplifiedPath.Count; i++)
+            {
+                Debug.DrawLine(new Vector3(simplifiedPath[i-1].x, height, simplifiedPath[i-1].y), new Vector3(simplifiedPath[i].x, height, simplifiedPath[i].y), Color.magenta, time);
+            }
+        }
+        return simplifiedPath;
+    }
+
+    /**
+     * bool Intersects(Vector2, Vector2, Vector2, Vector2, out Vector2)
+     * Line intersection helper method, takes in two lines and outputs the boolean intersaction and intersection location
+     */
+    private bool Intersects(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2, out Vector2 intersection)
+    {
+        intersection = Vector2.zero;
+
+        Vector2 b = a2 - a1;
+        Vector2 d = b2 - b1;
+        float bDotDPerp = b.x * d.y - b.y * d.x;
+
+        // if b dot d == 0, it means the lines are parallel so have infinite intersection points
+        if (bDotDPerp == 0)
+            return false;
+
+        Vector2 c = b1 - a1;
+        float t = (c.x * d.y - c.y * d.x) / bDotDPerp;
+        if (t < 0 || t > 1)
+            return false;
+
+        float u = (c.x * b.y - c.y * b.x) / bDotDPerp;
+        if (u < 0 || u > 1)
+            return false;
+
+        intersection = a1 + t * b;
+
+        return true;
+    }
+
+    /**
+     * GenericDigraph GenerateGraphFromQuadTree(Vector2, Vector2, QuadTree)
+     * Generates a graphical representation of a QuadTree along with a start and end location for pathfinding
+     * Creates the graph as two uni-directional edges connecting the centers of each neighboring quad in the tree.
+     */
+    private GenericDigraph GenerateGraphFromQuadTree(Vector2 startLoc, Vector2 endLoc, QuadTree tree)
+    {
+        List<Vector2> verts = new List<Vector2>();
+        List<DirectedEdge> edges = new List<DirectedEdge>();
+        List<QuadTreeNode> children = tree.GetLeaves();
+        verts.Add(startLoc);
+        edges.Add(new DirectedEdge(0, children.IndexOf(tree.GetNode(startLoc)) + 1));
+        for (int i = 0; i < children.Count; i++)
+        {
+            verts.Add(children[i].GetCenterPoint());
+            List<QuadTreeNode> adjs = children[i].GetDirections();
+            foreach (QuadTreeNode adj in adjs)
+            {
+                edges.Add(new DirectedEdge(i + 1, children.IndexOf(adj) + 1));
+            }
+        }
+        verts.Add(endLoc);
+        edges.Add(new DirectedEdge(children.IndexOf(tree.GetNode(endLoc)) + 1, verts.Count - 1)); //Guarunteed to have 2 verts so this is safe
+        return new GenericDigraph(verts, edges);
     }
 
     /**

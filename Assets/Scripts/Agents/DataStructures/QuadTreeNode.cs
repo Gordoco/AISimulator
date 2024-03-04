@@ -69,6 +69,11 @@ public class QuadTreeNode
         return null;
     }
 
+    public bool CheckIfWithin(Vector2 point)
+    {
+        return point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h;
+    }
+
     public bool NodeIsLeaf()
     {
         return NW == null && NE == null && SE == null && NW == null;
@@ -77,15 +82,19 @@ public class QuadTreeNode
     public List<NodeDepth> GetChildren(int depth = 0)
     {
         var arr = new List<NodeDepth>();
-        if (NodeIsLeaf()) return arr;
+        if (NodeIsLeaf())
+        {
+            if (depth == 0) arr.Add(new NodeDepth(this, depth));
+            return arr;
+        }
         if (!NE.NodeIsLeaf()) arr.AddRange(NE.GetChildren(depth + 1));
-        else arr.Add(new NodeDepth(NE, depth));
+        else arr.Add(new NodeDepth(NE, depth + 1));
         if (!NW.NodeIsLeaf()) arr.AddRange(NW.GetChildren(depth + 1));
-        else arr.Add(new NodeDepth(NW, depth));
+        else arr.Add(new NodeDepth(NW, depth + 1));
         if (!SE.NodeIsLeaf()) arr.AddRange(SE.GetChildren(depth + 1));
-        else arr.Add(new NodeDepth(SE, depth));
+        else arr.Add(new NodeDepth(SE, depth + 1));
         if (!SW.NodeIsLeaf()) arr.AddRange(SW.GetChildren(depth + 1));
-        else arr.Add(new NodeDepth(SW, depth));
+        else arr.Add(new NodeDepth(SW, depth + 1));
         return arr;
     }
 
