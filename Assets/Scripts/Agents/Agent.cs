@@ -38,6 +38,16 @@ public class Agent : MonoBehaviour
     }
 
     /**
+     * #### void OnCollisionEnter(Collision)
+     * Unity method for evaluating collisions.
+     * Used to error check collision prevention systems.
+     */
+    public void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log("ERROR: Agent collided with another object. Agent Name: " + gameObject.name + " Other Obj Name: " + collision.gameObject.name);
+    }
+
+    /**
      * #### int[][] ScanLocalArea()
      * Checks the points in a 3x3 grid around the agent and sends that information to the local grid
      */
