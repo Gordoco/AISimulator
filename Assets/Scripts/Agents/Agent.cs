@@ -218,12 +218,14 @@ public class Agent : MonoBehaviour
             transform.position.z < planner.currentPath[progress].y + tolerance && transform.position.z > planner.currentPath[progress].y - tolerance)
         {
             progress++;
+            movementDirection = Vector3.zero;
         }
         else
         {
             //Add scripted move based on path plan
             movementDirection = new Vector3(planner.currentPath[progress].x, 0, planner.currentPath[progress].y) - new Vector3(transform.position.x, transform.position.y, transform.position.z);
             movementDirection.Normalize();
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up);
         }
     }
     

@@ -151,7 +151,7 @@ public class PathPlanner
     private List<Vector2> VisibilitySimplification(PathInfo originalPath, List<Vector2> pathPoints, bool bShouldPrint = false, float time = 0.2f, float height = 1)
     {
         List<Vector2> simplifiedPath = new List<Vector2>();
-        if (pathPoints.Count == 2) return pathPoints; //No simplification possible
+        if (pathPoints.Count == 2) { return pathPoints; } //No simplification possible
 
         //Debugging error message
         if (pathPoints.Count > originalPath.nodes.Count + 1) Debug.Log("ERROR: Improper Path Length || Num Nodes: " + originalPath.nodes.Count + " Num Points: " + pathPoints.Count);
@@ -170,8 +170,8 @@ public class PathPlanner
 
             if (i2 - i1 == 0)
             {
-                simplifiedPath.Add(pathPoints[i]);
-                lastAddedPoint = i;
+                simplifiedPath.Add(pathPoints[0]);
+                lastAddedPoint = 0;
             }
 
             for (int k = i1; k < (i2-i1) - 1; k++)
