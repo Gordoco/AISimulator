@@ -15,11 +15,11 @@ public class SpawnAgents : MonoBehaviour
     {
         for (int i = 0; i < NumberOfAgents; i++)
         {
-            Vector3 locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
+            Vector3 locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0.5f, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
 
             while (!CheckValidLoc(locationToSpawn))
             {
-                locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
+                locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0.5f, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
             }
             GameObject agent = Instantiate(AgentType, locationToSpawn, Quaternion.identity);
             agent.GetComponent<Agent>().Init();

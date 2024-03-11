@@ -175,7 +175,7 @@ public class Agent : MonoBehaviour
 
         if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
         {
-            Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
+            //Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
             node = null;
             visitedNodes.Clear();
             visitedCount = 0;
@@ -233,7 +233,7 @@ public class Agent : MonoBehaviour
         else
         {
             //Add scripted move based on path plan
-            movementDirection = new Vector3(planner.currentPath[progress].x, 0, planner.currentPath[progress].y) - new Vector3(transform.position.x, transform.position.y, transform.position.z);
+            movementDirection = new Vector3(planner.currentPath[progress].x, 0, planner.currentPath[progress].y) - new Vector3(transform.position.x, 0, transform.position.z);
             movementDirection.Normalize();
             transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up);
         }

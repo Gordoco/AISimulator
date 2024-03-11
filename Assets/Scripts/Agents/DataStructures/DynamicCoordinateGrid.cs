@@ -134,6 +134,8 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 lastMappedPos = new Vector2(intVect[0], intVect[1]);
             }
         }
+
+        //Physically Move
         owner.gameObject.transform.position = toVector3(owner.gameObject.transform.position.y, newLoc);
         if (bTeleport)
         {
@@ -142,6 +144,10 @@ public class DynamicCoordinateGrid : MonoBehaviour
             SetLocalValues(owner.ScanArea(intVect));
             lastMappedPos = new Vector2(intVect[0], intVect[1]);
         }
+
+        //Handle collisions
+        ReactiveCollisionPrevention collisionPreventionSystem = new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>());
+
         //DEBUG Unit Tests
         //Print(inverseMoveSpeed);
     }

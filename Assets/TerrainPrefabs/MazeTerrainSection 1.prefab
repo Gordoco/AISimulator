@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 7550864875273543301}
   - component: {fileID: 7279356585682544224}
   - component: {fileID: 593663642372081486}
-  - component: {fileID: 4960432308271201088}
   - component: {fileID: 7001587057612440855}
   m_Layer: 8
   m_Name: MazeTerrainSection 1
@@ -85,20 +84,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &4960432308271201088
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 203426771623560441}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!114 &7001587057612440855
 MonoBehaviour:
   m_ObjectHideFlags: 0
