@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 2;
+    public int MinSize = 1;
 
     private QuadTreeNode root;
     private Vector2 Origin;

@@ -143,6 +143,15 @@ public class Agent : MonoBehaviour
         currLocation = transform.position;
     }
 
+    public void Teleported()
+    {
+        progress = 0;
+        movementDirection = Vector3.zero;
+        count = 1;
+        visitedNodes.Clear();
+        visitedCount = 0;
+    }
+
     /**
      * #### Wander Algorithm
      * Currently in a test implementation format, should implement an efficent domain-independant exploration algorithm
@@ -199,6 +208,7 @@ public class Agent : MonoBehaviour
 
         if (node == null)
         {
+            mapping.Move(new Vector2(transform.position.x, transform.position.z), this);
             planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 0.2f);
         }
         else
