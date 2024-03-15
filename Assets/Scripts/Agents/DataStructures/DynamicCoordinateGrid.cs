@@ -169,7 +169,17 @@ public class DynamicCoordinateGrid : MonoBehaviour
         }
 
         //Handle collisions
-        if (bCheckCollision) new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>(), this);
+        if (bCheckCollision)
+        {
+            new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>(), this);
+        }
+        else
+        {
+            int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
+            intVect = temp2;
+            SetLocalValues(owner.ScanArea(intVect));
+            lastMappedPos = new Vector2(intVect[0], intVect[1]);
+        }
 
         //DEBUG Unit Tests
         //Print(inverseMoveSpeed);

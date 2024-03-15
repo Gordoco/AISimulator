@@ -34,6 +34,10 @@ public class Agent : MonoBehaviour
         currLocation = transform.position;
         bAwake = true;
 
+        Bounds bounds = GetComponent<Collider>().bounds;
+        float radius = Vector2.Distance(new Vector2(bounds.center.x + bounds.extents.x, bounds.center.y + bounds.extents.y), new Vector2(bounds.center.x, bounds.center.y));
+        tolerance = radius;
+
         Debug.Log("TEST");
     }
 
@@ -134,6 +138,7 @@ public class Agent : MonoBehaviour
         //Teleportation test implementation for debugging wander algorithm
         if (Input.GetKeyDown(KeyCode.G))
         {
+
             Vector2 loc = new Vector2(300, 351);
             mapping.Move(loc, this, true, planner); //Teleport
             Debug.Log("Welcome to your new destination at: " + loc);
@@ -208,7 +213,7 @@ public class Agent : MonoBehaviour
 
         if (node == null)
         {
-            mapping.Move(new Vector2(transform.position.x, transform.position.z), this);
+            mapping.Move(new Vector2(transform.position.x, transform.position.z), this, true);
             planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 0.2f);
         }
         else

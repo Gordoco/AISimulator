@@ -19,8 +19,61 @@ public class ReactiveCollisionPrevention
                 //SOLVE COLLISION
                 Debug.Log("WE HAVE A COLLISION BOYS: " + hits[i].collider.gameObject.name);
                 if (hits[i].collider.gameObject.GetComponent<Agent>()) HandleAgentAgentCollision(obj, hits[i].collider, radius, mapping);
-                else HandleAgentWallCollision(obj, hits[i].collider);
+                else 
+                {
+                    Vector3[] points = new Vector3[2];
+
+                    Vector3 normal = GetCorrectNormalForSphere(hits[i], obj.transform.forward);
+                    RaycastHit hit;
+                    Vector3 point1 = bounds.center;
+                    if (Physics.Raycast(point1, -normal, out hit, radius, 1 << 8))
+                    {
+                        float x = Vector3.Distance(point1, hit.point);
+                        float y = Mathf.Sqrt(Mathf.Pow(radius, 2) - Mathf.Pow(x, 2));
+
+                        Vector3 dir = Vector3.Cross(normal, Vector3.up).normalized;
+                        points[0] = hit.point + (dir * y);
+                        points[1] = hit.point - (dir * y);
+
+                        HandleAgentWallCollision(obj, hits[i].collider, normal, points, radius, mapping);
+
+                        DrawCircle(bounds.center, radius, 60, Color.blue, 5);
+                    }
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// Calculates the surface normal for CapsuleCast and SphereCast
+    /// </summary>
+    /// <param name="hit">original hit</param>
+    /// <param name="dir">original direction of the raycast</param>
+    /// <returns>correct normal</returns>
+    /// <remarks>https://forum.unity.com/threads/spherecast-capsulecast-raycasthit-normal-is-not-the-surface-normal-as-the-documentation-states.275369/</remarks>
+    public Vector3 GetCorrectNormalForSphere(RaycastHit hit, Vector3 dir)
+    {
+        if (hit.collider is MeshCollider)
+        {
+            var collider = hit.collider as MeshCollider;
+            var mesh = collider.sharedMesh;
+            var tris = mesh.triangles;
+            var verts = mesh.vertices;
+
+            var v0 = verts[tris[hit.triangleIndex * 3]];
+            var v1 = verts[tris[hit.triangleIndex * 3 + 1]];
+            var v2 = verts[tris[hit.triangleIndex * 3 + 2]];
+
+            var n = Vector3.Cross(v1 - v0, v2 - v1).normalized;
+
+            
+            return hit.transform.TransformDirection(n);
+        }
+        else
+        {
+            RaycastHit result;
+            hit.collider.Raycast(new Ray(hit.point - dir * 0.01f, dir), out result, 0.011f);
+            return result.normal;
         }
     }
 
@@ -119,7 +172,6 @@ public class ReactiveCollisionPrevention
         DrawCircle(new Vector3(origCenter.x, y, origCenter.y), origRadius, segments, Color.black, time);
         DrawCircle(new Vector3(otherCenter.x, y, otherCenter.y), otherRadius, segments, Color.red, time);
         DrawCircle(new Vector3(newCenter.x, y, newCenter.y), origRadius, segments, Color.blue, time);
-        //Debug.Break();
     }
 
     public static void DrawCircle(Vector3 position, float radius, int segments, Color color, float time)
@@ -168,8 +220,29 @@ public class ReactiveCollisionPrevention
         }
     }
 
-    private void HandleAgentWallCollision(GameObject obj, Collider hitCollider)
+    private void HandleAgentWallCollision(GameObject obj, Collider hitCollider, Vector3 normal, Vector3[] circleIntercepts, float radius, DynamicCoordinateGrid mapping)
     {
+        Vector3 moveDir = obj.transform.forward;
+        Vector3 compPos = obj.transform.position + moveDir;
+        Vector3 posToUse = circleIntercepts[0];
 
+        float dist1 = Vector3.Distance(compPos, circleIntercepts[0]);
+        float dist2 = Vector3.Distance(compPos, circleIntercepts[1]);
+
+        if (dist1 <= dist2) posToUse = circleIntercepts[0];
+        else posToUse = circleIntercepts[1];
+
+        Vector3 destination = posToUse + (normal * radius);
+        Debug.Log("DESTINATION: " + destination);
+        Debug.Log("posToUse: " + posToUse);
+        Debug.Log("(normal * radius): " + (normal * radius));
+
+        Vector3 DEBUG_destination = circleIntercepts[1] + (normal * radius);
+
+        Debug.DrawLine(new Vector3(posToUse.x, -5, posToUse.z), new Vector3(posToUse.x, 5, posToUse.z), Color.gray, 5);
+        Debug.DrawLine(new Vector3(circleIntercepts[1].x, -5, circleIntercepts[1].z), new Vector3(circleIntercepts[1].x, 5, circleIntercepts[1].z), Color.gray, 5);
+
+        mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), false, null, false);
+        //Debug.Break();
     }
 }
