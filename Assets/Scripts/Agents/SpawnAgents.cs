@@ -10,19 +10,29 @@ public class SpawnAgents : MonoBehaviour
 
     public int NumberOfAgents = 10;
 
+    private List<GameObject> agents = new List<GameObject>();
+
     // Start is called before the first frame update
     void Start()
     {
+        InitAgents(true);
+    }
+
+    public void InitAgents(bool bStart = false)
+    {
         for (int i = 0; i < NumberOfAgents; i++)
         {
-            Vector3 locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
+            Vector3 locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 2.5f, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
 
             while (!CheckValidLoc(locationToSpawn))
             {
-                locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 0, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
+                locationToSpawn = new Vector3((int)Random.Range(WorldOrigin.x, WorldOrigin.x + WorldDimensions.x), 2.5f, (int)Random.Range(WorldOrigin.y, WorldOrigin.y + WorldDimensions.y));
             }
-            GameObject agent = Instantiate(AgentType, locationToSpawn, Quaternion.identity);
-            agent.GetComponent<Agent>().Init();
+            if (bStart)
+            {
+                GameObject agent = Instantiate(AgentType, locationToSpawn, Quaternion.identity);
+                agents.Add(agent);
+            }
         }
     }
 
