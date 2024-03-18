@@ -9,7 +9,10 @@ public class PathPlanner
 {
     public bool OnPath = false;
     public List<Vector2> currentPath;
+    private Agent owner = null;
 
+    public PathPlanner() { }
+    public PathPlanner(Agent owner) { this.owner = owner; }
 
     /**
      * #### PathInfo
@@ -89,6 +92,7 @@ public class PathPlanner
             List<Vector2> neighbors = graph.GetNeighbors(q.value);
             for (int i = 0; i < neighbors.Count; i++)
             {
+                
                 AStarNode newNode = new AStarNode(q.g + Vector2.Distance(q.value, neighbors[i]), q, neighbors[i]);
                 float newh = Vector2.Distance(neighbors[i], destination);
                 newNode.f = newNode.g + newh;
@@ -151,7 +155,7 @@ public class PathPlanner
     private List<Vector2> VisibilitySimplification(PathInfo originalPath, List<Vector2> pathPoints, bool bShouldPrint = false, float time = 0.2f, float height = 1)
     {
         List<Vector2> simplifiedPath = new List<Vector2>();
-        if (pathPoints.Count == 2) return pathPoints; //No simplification possible
+        if (pathPoints.Count == 2) { return pathPoints; } //No simplification possible
 
         //Debugging error message
         if (pathPoints.Count > originalPath.nodes.Count + 1) Debug.Log("ERROR: Improper Path Length || Num Nodes: " + originalPath.nodes.Count + " Num Points: " + pathPoints.Count);
@@ -170,8 +174,8 @@ public class PathPlanner
 
             if (i2 - i1 == 0)
             {
-                simplifiedPath.Add(pathPoints[i]);
-                lastAddedPoint = i;
+                simplifiedPath.Add(pathPoints[0]);
+                lastAddedPoint = 0;
             }
 
             for (int k = i1; k < (i2-i1) - 1; k++)
@@ -239,7 +243,9 @@ public class PathPlanner
     {
         List<Vector2> verts = new List<Vector2>();
         List<DirectedEdge> edges = new List<DirectedEdge>();
-        List<QuadTreeNode> children = tree.GetLeaves();
+        List<QuadTreeNode> temp = tree.GetLeaves();
+        List<QuadTreeNode> children = new List<QuadTreeNode>();
+        for (int i = 0; i < temp.Count; i++) if (temp[i].nodeType == NodeIDs.Free) children.Add(temp[i]);
         verts.Add(startLoc);
         edges.Add(new DirectedEdge(0, children.IndexOf(tree.GetNode(startLoc)) + 1));
         for (int i = 0; i < children.Count; i++)

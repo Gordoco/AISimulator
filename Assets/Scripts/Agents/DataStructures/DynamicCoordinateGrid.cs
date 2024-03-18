@@ -24,7 +24,7 @@ public class DynamicCoordinateGrid : MonoBehaviour
      */
     //public void Move(Vector2 dir, int[][] localMap, float inverseMoveSpeed)
     //{
-    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false /* For implementing later */, PathPlanner planner = null)
+    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false /* For implementing later */, PathPlanner planner = null, bool bCheckCollision = true)
     {
         if (bTeleport && planner == null)
         {
@@ -34,11 +34,6 @@ public class DynamicCoordinateGrid : MonoBehaviour
 
         if (bTeleport) planner.CancelPath();
 
-        /*if (localMap.Length <= 0 || localMap[0].Length <= 0 || localMap.Length != localMap[0].Length)
-        {
-            Debug.Log("DCG_Move: Move Invalid");
-            return;
-        }*/
         int[] intVect = { -1 };
 
         int dirX = (int)Mathf.Round(newLoc.x - lastMappedPos.x);
@@ -49,6 +44,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (3 + GetConversionFactor().x == width)
                 {
+                    //Add row to the top
+                    grid.Insert(0, new List<int>());
+                    for (int i = 0; i < width; i++)
+                    {
+                        grid[0].Add((int)MappingIDs.Undefined);
+                    }
+                    localOrigin.y += 1;
+
                     //Add Column to the right
                     for (int i = 0; i < grid.Count; i++)
                     {
@@ -64,6 +67,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (GetConversionFactor().x == 0)
                 {
+                    //Add row to the bottom
+                    grid.Add(new List<int>());
+                    for (int i = 0; i < width; i++)
+                    {
+                        grid[grid.Count - 1].Add((int)MappingIDs.Undefined);
+                    }
+                    gridCorner[1] -= 1;
+
                     //Add Column to the left
                     for (int i = 0; i < grid.Count; i++)
                     {
@@ -101,6 +112,11 @@ public class DynamicCoordinateGrid : MonoBehaviour
                     }
                     localOrigin.y += 1;
 
+                    //Add Column to the right
+                    for (int i = 0; i < grid.Count; i++)
+                    {
+                        grid[i].Add((int)MappingIDs.Undefined);
+                    }
                 }
                 //Debug.Log("UP");
                 currentLocation.y -= 1;
@@ -111,7 +127,6 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (3 + GetConversionFactor().y == height)
                 {
-
                     //Add row to the bottom
                     grid.Add(new List<int>());
                     for (int i = 0; i < width; i++)
@@ -119,6 +134,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
                         grid[grid.Count - 1].Add((int)MappingIDs.Undefined);
                     }
                     gridCorner[1] -= 1;
+
+                    //Add Column to the left
+                    for (int i = 0; i < grid.Count; i++)
+                    {
+                        grid[i].Insert(0, (int)MappingIDs.Undefined);
+                    }
+                    localOrigin.x += 1;
+                    gridCorner[0] -= 1;
                 }
                 //Debug.Log("DOWN");
                 currentLocation.y += 1;
@@ -134,6 +157,8 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 lastMappedPos = new Vector2(intVect[0], intVect[1]);
             }
         }
+
+        //Physically Move
         owner.gameObject.transform.position = toVector3(owner.gameObject.transform.position.y, newLoc);
         if (bTeleport)
         {
@@ -142,6 +167,20 @@ public class DynamicCoordinateGrid : MonoBehaviour
             SetLocalValues(owner.ScanArea(intVect));
             lastMappedPos = new Vector2(intVect[0], intVect[1]);
         }
+
+        //Handle collisions
+        if (bCheckCollision)
+        {
+            new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>(), this);
+        }
+        else
+        {
+            int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
+            intVect = temp2;
+            SetLocalValues(owner.ScanArea(intVect));
+            lastMappedPos = new Vector2(intVect[0], intVect[1]);
+        }
+
         //DEBUG Unit Tests
         //Print(inverseMoveSpeed);
     }
