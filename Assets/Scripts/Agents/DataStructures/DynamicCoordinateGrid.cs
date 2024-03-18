@@ -24,7 +24,7 @@ public class DynamicCoordinateGrid : MonoBehaviour
      */
     //public void Move(Vector2 dir, int[][] localMap, float inverseMoveSpeed)
     //{
-    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false /* For implementing later */, PathPlanner planner = null, bool bCheckCollision = true)
+    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false /* For implementing later */, PathPlanner planner = null, bool bCheckCollision = true, bool bPrint = false)
     {
         if (bTeleport && planner == null)
         {
@@ -32,7 +32,10 @@ public class DynamicCoordinateGrid : MonoBehaviour
             return;
         }
 
-        if (bTeleport) planner.CancelPath();
+        if (bTeleport)
+        {
+            planner.CancelPath();
+        }
 
         int[] intVect = { -1 };
 
@@ -156,30 +159,22 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 SetLocalValues(owner.ScanArea(intVect));
                 lastMappedPos = new Vector2(intVect[0], intVect[1]);
             }
+            //if (bPrint) Print();
         }
 
         //Physically Move
         owner.gameObject.transform.position = toVector3(owner.gameObject.transform.position.y, newLoc);
-        if (bTeleport)
-        {
-            int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
-            intVect = temp2;
-            SetLocalValues(owner.ScanArea(intVect));
-            lastMappedPos = new Vector2(intVect[0], intVect[1]);
-        }
 
         //Handle collisions
         if (bCheckCollision)
         {
-            new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>(), this);
+            new ReactiveCollisionPrevention(gameObject, GetComponent<Collider>(), this, bPrint);
         }
-        else
-        {
-            int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
-            intVect = temp2;
-            SetLocalValues(owner.ScanArea(intVect));
-            lastMappedPos = new Vector2(intVect[0], intVect[1]);
-        }
+
+        int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
+        intVect = temp2;
+        SetLocalValues(owner.ScanArea(intVect));
+        lastMappedPos = new Vector2(intVect[0], intVect[1]);
 
         //DEBUG Unit Tests
         //Print(inverseMoveSpeed);
@@ -268,13 +263,13 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 Color lineCol;
                 if ((MappingIDs)grid[i][j] == MappingIDs.Free) lineCol = Color.green;
                 else lineCol = Color.red;
-                /*Vector3 init = new Vector3(j + Origin.x + gridCorner[0], 5, grid.Count - i + Origin.z + gridCorner[1]);
+                Vector3 init = new Vector3(j + Origin.x + gridCorner[0], 5, grid.Count - i + Origin.z + gridCorner[1]);
                 Vector3 end = new Vector3(j + Origin.x + gridCorner[0], -5, grid.Count - i + Origin.z + gridCorner[1]);
-                Debug.DrawLine(init, end, lineCol, inverseMoveSpeed);*/
+                Debug.DrawLine(init, end, lineCol, inverseMoveSpeed);
             }
             toPrint += "\n";
         }
-        Debug.Log(toPrint);
+        /*Debug.Log(toPrint);
         Debug.Log("W: " + width + " || H: " + height);
         Debug.Log("X: " + currentLocation.x + " || Y: " + currentLocation.y);
         Debug.Log("ConvX: " + GetConversionFactor().x + " || ConvY: " + GetConversionFactor().y);
@@ -296,6 +291,6 @@ public class DynamicCoordinateGrid : MonoBehaviour
         {
             myNode.colorOverride = Color.black;
             myNode.Print(inverseMoveSpeed);
-        }
+        }*/
     }
 }

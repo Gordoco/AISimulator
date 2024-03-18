@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 1;
+    public int MinSize = 2;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -16,14 +16,14 @@ public class QuadTree
      * #### void Construct(DynamicCoordinateGrid, Vector3)
      * Creates the physical QuadTree by initializing one base quad on the entire grid and recursivly partitioning that quad
      */
-    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f)
+    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f, bool bPrint = false)
     {
         root = new QuadTreeNode(offset.x + mapping.gridCorner[0], offset.z + mapping.gridCorner[1], 
-            mapping.width, mapping.height);
+            mapping.width - 1, mapping.height - 1);
         root.tree = this;
         Origin = new Vector2(offset.x + mapping.gridCorner[0], offset.z + mapping.gridCorner[1]);
-        Partition(root, mapping);
-        Print(time);
+        Partition(root, mapping, bPrint);
+        if (bPrint) Print(time);
     }
 
     /**
@@ -39,11 +39,35 @@ public class QuadTree
      * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
      * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
      */
-    public List<NodeDepth> GetFurthestFreeNodes(Vector2 location)
+    public List<QuadTreeNode> GetFurthestFreeNodes(Vector2 location)
     {
-        List<NodeDepth> children = root.GetFreeChildren();
+        /*List<NodeDepth> children = root.GetFreeChildren();
         children.Sort((a, b) => a.CompareTo(b, location));
-        return children;
+        List<QuadTreeNode> nodes = new List<QuadTreeNode>();
+        foreach (NodeDepth depth in children) nodes.Add(depth.node);
+        return nodes;*/
+
+        QuadTreeNode myNode = GetNode(location);
+        if (myNode == null || myNode.nodeType != NodeIDs.Free) return null;
+        List<QuadTreeNode> finalArr = new List<QuadTreeNode>();
+        List<QuadTreeNode> neighbors = myNode.GetDirections();
+        while (neighbors.Count > 0)
+        {
+            float furthest = 0;
+            QuadTreeNode furthestNode = null;
+            foreach (QuadTreeNode node in neighbors)
+            {
+                if (!finalArr.Contains(node) && node.nodeType == NodeIDs.Free && Vector2.Distance(location, node.GetCenterPoint()) > furthest)
+                {
+                    furthest = Vector2.Distance(location, node.GetCenterPoint());
+                    furthestNode = node;
+                }
+            }
+            if (furthestNode == null) break;
+            finalArr.Add(furthestNode);
+            neighbors = furthestNode.GetDirections();
+        }
+        return finalArr;
     }
 
     /**
@@ -86,9 +110,9 @@ public class QuadTree
      * #### void Partition(QuadTreeNode, DynamicCoordinateGrid)
      * Recursive method for splitting quads depending on the result of the MustBeSubdivided method
      */
-    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
-        if (MustBeSubdivided(node, mapping))
+        if (MustBeSubdivided(node, mapping, bPrint))
         {
             node.SW = new QuadTreeNode(node.x, node.y, node.w / 2, node.h / 2);
             node.SW.nodeLoc = 3;
@@ -126,7 +150,7 @@ public class QuadTree
      * A boolean algorithm which compares the points within a quad with their mapping on the agent grid.
      * Determines if a split is needed which is then propogated by Partition
      */
-    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         bool foundValid = false;
         bool foundInvalid = false;
@@ -148,7 +172,7 @@ public class QuadTree
                 else lineCol = Color.red;
 
                 //DEBUG: Visualize the mapping used by the current tree
-                if (map == MappingIDs.Full) Debug.DrawLine(init, end, lineCol, 2);
+                //if (bPrint && map == MappingIDs.Free) Debug.DrawLine(init, end, lineCol, 0.2f);
                 //-----------------------------------------------------
 
                 if (map == MappingIDs.Full || map == MappingIDs.Undefined)

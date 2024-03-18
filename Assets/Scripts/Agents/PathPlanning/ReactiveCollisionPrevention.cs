@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class ReactiveCollisionPrevention
 {
-    public ReactiveCollisionPrevention(GameObject obj, Collider objCollider, DynamicCoordinateGrid mapping)
+    public ReactiveCollisionPrevention(GameObject obj, Collider objCollider, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         Bounds bounds = objCollider.bounds;
         float radius = Vector2.Distance(new Vector2(bounds.center.x + bounds.extents.x, bounds.center.y + bounds.extents.y), new Vector2(bounds.center.x, bounds.center.y));
@@ -18,7 +18,7 @@ public class ReactiveCollisionPrevention
             {
                 //SOLVE COLLISION
                 Debug.Log("WE HAVE A COLLISION BOYS: " + hits[i].collider.gameObject.name);
-                if (hits[i].collider.gameObject.GetComponent<Agent>()) HandleAgentAgentCollision(obj, hits[i].collider, radius, mapping);
+                if (hits[i].collider.gameObject.GetComponent<Agent>()) HandleAgentAgentCollision(obj, hits[i].collider, radius, mapping, bPrint);
                 else 
                 {
                     Vector3[] points = new Vector3[2];
@@ -35,9 +35,9 @@ public class ReactiveCollisionPrevention
                         points[0] = hit.point + (dir * y);
                         points[1] = hit.point - (dir * y);
 
-                        HandleAgentWallCollision(obj, hits[i].collider, normal, points, radius, mapping);
+                        HandleAgentWallCollision(obj, hits[i].collider, normal, points, radius, mapping, bPrint);
 
-                        DrawCircle(bounds.center, radius, 60, Color.blue, 5);
+                        if (bPrint) DrawCircle(bounds.center, radius, 60, Color.blue, 5);
                     }
                 }
             }
@@ -131,7 +131,7 @@ public class ReactiveCollisionPrevention
     /// </summary>
     /// <param name="obj">Agent owning this script</param>
     /// <param name="hitCollider">Collider of opposing agent</param>
-    private void HandleAgentAgentCollision(GameObject obj, Collider hitCollider, float radius, DynamicCoordinateGrid mapping)
+    private void HandleAgentAgentCollision(GameObject obj, Collider hitCollider, float radius, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         Bounds selfBounds = obj.GetComponent<Collider>().bounds;
         Bounds otherBounds = hitCollider.bounds;
@@ -157,7 +157,7 @@ public class ReactiveCollisionPrevention
             //Vector3 locationToMove = new Vector3(locationToMove2D.x, obj.transform.position.y, locationToMove2D.y);
 
             //TODO: Add an additional SphereCastAll at this point and if colliding flag agent as "CANTMOVE"
-            mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, false);
+            mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, bPrint);
 
             //DEBUG: Print
             //Print(obj, radius, selfCenter, radius, otherCenter, locationToMove2D);
@@ -220,7 +220,7 @@ public class ReactiveCollisionPrevention
         }
     }
 
-    private void HandleAgentWallCollision(GameObject obj, Collider hitCollider, Vector3 normal, Vector3[] circleIntercepts, float radius, DynamicCoordinateGrid mapping)
+    private void HandleAgentWallCollision(GameObject obj, Collider hitCollider, Vector3 normal, Vector3[] circleIntercepts, float radius, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         Vector3 moveDir = obj.transform.forward;
         Vector3 compPos = obj.transform.position + moveDir;
@@ -232,17 +232,21 @@ public class ReactiveCollisionPrevention
         if (dist1 <= dist2) posToUse = circleIntercepts[0];
         else posToUse = circleIntercepts[1];
 
-        Vector3 destination = posToUse + (normal * radius);
+        Vector3 destination = posToUse + (normal * (radius + 1));
         Debug.Log("DESTINATION: " + destination);
         Debug.Log("posToUse: " + posToUse);
         Debug.Log("(normal * radius): " + (normal * radius));
 
         Vector3 DEBUG_destination = circleIntercepts[1] + (normal * radius);
 
-        Debug.DrawLine(new Vector3(posToUse.x, -5, posToUse.z), new Vector3(posToUse.x, 5, posToUse.z), Color.gray, 5);
-        Debug.DrawLine(new Vector3(circleIntercepts[1].x, -5, circleIntercepts[1].z), new Vector3(circleIntercepts[1].x, 5, circleIntercepts[1].z), Color.gray, 5);
+        if (bPrint)
+        {
+            Debug.DrawLine(new Vector3(posToUse.x, -5, posToUse.z), new Vector3(posToUse.x, 5, posToUse.z), Color.gray, 5);
+            Debug.DrawLine(new Vector3(circleIntercepts[1].x, -5, circleIntercepts[1].z), new Vector3(circleIntercepts[1].x, 5, circleIntercepts[1].z), Color.gray, 5);
+        }
 
-        mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), false, null, false);
+        mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+        //obj.GetComponent<Agent>().Teleported();
         //Debug.Break();
     }
 }
