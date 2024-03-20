@@ -16,14 +16,19 @@ public class QuadTree
      * #### void Construct(DynamicCoordinateGrid, Vector3)
      * Creates the physical QuadTree by initializing one base quad on the entire grid and recursivly partitioning that quad
      */
-    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f)
+    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f, bool bPrint = false)
     {
+        /*Vector3 line1S = new Vector3(offset.x + mapping.gridCorner[0], 5, offset.z + mapping.gridCorner[1]);
+        Vector3 line1E = new Vector3(offset.x + mapping.gridCorner[0], -5, offset.z + mapping.gridCorner[1]);
+        Debug.DrawLine(line1S, line1E, Color.cyan, 20);*/
+
+
         root = new QuadTreeNode(offset.x + mapping.gridCorner[0], offset.z + mapping.gridCorner[1], 
-            mapping.width, mapping.height);
+            mapping.width - 1, mapping.height - 1);
         root.tree = this;
         Origin = new Vector2(offset.x + mapping.gridCorner[0], offset.z + mapping.gridCorner[1]);
-        Partition(root, mapping);
-        Print(time);
+        Partition(root, mapping, bPrint);
+        if (bPrint) Print(time);
     }
 
     /**
@@ -35,15 +40,59 @@ public class QuadTree
         return root.GetNode(location);
     }
 
+    public QuadTreeNode GetNearestFreeNode(Vector2 location)
+    {
+        QuadTreeNode currNode = GetNode(location);
+        if (currNode.nodeType == NodeIDs.Free) return currNode;
+        List<QuadTreeNode> neighbors = currNode.GetDirections();
+        float val = Mathf.Infinity;
+        QuadTreeNode currNearest = currNode;
+        for (int i = 0; i < neighbors.Count; i++)
+        {
+            if (neighbors[i].nodeType != NodeIDs.Free) continue;
+            float dist = Vector2.Distance(neighbors[i].GetCenterPoint(), location);
+            if (dist < val)
+            {
+                val = dist;
+                currNearest = neighbors[i];
+            }
+        }
+        return currNearest;
+    }
+
     /**
      * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
      * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
      */
-    public List<NodeDepth> GetFurthestFreeNodes(Vector2 location)
+    public List<QuadTreeNode> GetFurthestFreeNodes(Vector2 location)
     {
-        List<NodeDepth> children = root.GetFreeChildren();
+        /*List<NodeDepth> children = root.GetFreeChildren();
         children.Sort((a, b) => a.CompareTo(b, location));
-        return children;
+        List<QuadTreeNode> nodes = new List<QuadTreeNode>();
+        foreach (NodeDepth depth in children) nodes.Add(depth.node);
+        return nodes;*/
+
+        QuadTreeNode myNode = GetNode(location);
+        if (myNode == null || myNode.nodeType != NodeIDs.Free) return null;
+        List<QuadTreeNode> finalArr = new List<QuadTreeNode>();
+        List<QuadTreeNode> neighbors = myNode.GetDirections();
+        while (neighbors.Count > 0)
+        {
+            float furthest = 0;
+            QuadTreeNode furthestNode = null;
+            foreach (QuadTreeNode node in neighbors)
+            {
+                if (!finalArr.Contains(node) && node.nodeType == NodeIDs.Free && Vector2.Distance(location, node.GetCenterPoint()) > furthest)
+                {
+                    furthest = Vector2.Distance(location, node.GetCenterPoint());
+                    furthestNode = node;
+                }
+            }
+            if (furthestNode == null) break;
+            finalArr.Add(furthestNode);
+            neighbors = furthestNode.GetDirections();
+        }
+        return finalArr;
     }
 
     /**
@@ -86,9 +135,9 @@ public class QuadTree
      * #### void Partition(QuadTreeNode, DynamicCoordinateGrid)
      * Recursive method for splitting quads depending on the result of the MustBeSubdivided method
      */
-    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
-        if (MustBeSubdivided(node, mapping))
+        if (MustBeSubdivided(node, mapping, bPrint))
         {
             node.SW = new QuadTreeNode(node.x, node.y, node.w / 2, node.h / 2);
             node.SW.nodeLoc = 3;
@@ -126,14 +175,14 @@ public class QuadTree
      * A boolean algorithm which compares the points within a quad with their mapping on the agent grid.
      * Determines if a split is needed which is then propogated by Partition
      */
-    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         bool foundValid = false;
         bool foundInvalid = false;
 
-        for (int i = (int)node.x; i < node.x + node.w; i++)
+        for (int i = (int)node.x; i <= node.x + node.w; i++)
         {
-            for (int j = (int)node.y; j < node.y + node.h; j++)
+            for (int j = (int)node.y; j <= node.y + node.h; j++)
             {
                 //Enum representing location status, transformed back to world origin from agent origin
                 MappingIDs map = mapping.GetMapping((int)(i - Origin.x), (int)(j - Origin.y));
@@ -148,7 +197,7 @@ public class QuadTree
                 else lineCol = Color.red;
 
                 //DEBUG: Visualize the mapping used by the current tree
-                if (map == MappingIDs.Full) Debug.DrawLine(init, end, lineCol, 2);
+                //if (bPrint) Debug.DrawLine(init, end, lineCol, 0.2f);
                 //-----------------------------------------------------
 
                 if (map == MappingIDs.Full || map == MappingIDs.Undefined)
@@ -176,7 +225,7 @@ public class QuadTree
         else if (foundValid && foundInvalid)
         {
             node.nodeType = NodeIDs.Mixed;
-            if (node.w > MinSize && node.h > MinSize)
+            if (node.w >= MinSize*2 && node.h >= MinSize*2)
             {
                 return true;
             }

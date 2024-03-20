@@ -252,14 +252,16 @@ public class QuadTreeNode
         if (SE != null) SE.Print(time);
         if (SE == null && SW == null && NE == null && NW == null)
         {
-            float tx = x;// - 0.5f;
-            float ty = y;// - 0.5f;
+            float tx = x;
+            float ty = y;
             int up = 1 + (int)yOverride;
 
             Color quadCol;
             switch (nodeType)
             {
                 case NodeIDs.Undefined:
+                    quadCol = Color.gray;
+                    break;
                 case NodeIDs.Full:
                     quadCol = Color.red;
                     break;

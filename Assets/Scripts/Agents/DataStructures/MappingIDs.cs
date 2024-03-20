@@ -6,4 +6,4 @@
 * Full: Location is un-traversable
 * Grounding: Location is traversable and contains a grounding which may be demonstrated
 */
-public enum MappingIDs { Undefined, Free, Full, Grounding }
+public enum MappingIDs { Undefined, Free, Full }

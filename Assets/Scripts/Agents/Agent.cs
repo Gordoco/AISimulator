@@ -10,14 +10,21 @@ public class Agent : MonoBehaviour
     public float movementSpeed = 1;
     public float AgentSize = 1;
 
+    [SerializeField] private bool ShouldPrint = false;
+
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
     private Vector2 initLocation; //TESTING
     private Vector3 currLocation;
-    private Vector3 movementDirection = Vector3.zero;
+    public Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
     private bool bAwake = false;
+
+    QuadTree tree;
+
+    public DynamicCoordinateGrid GetMapping() { return mapping; }
+    public PathPlanner GetPlanner() { return planner; }
 
     /**
      * #### void Init()
@@ -28,14 +35,14 @@ public class Agent : MonoBehaviour
         planner = new PathPlanner();
 
         mapping = GetComponent<DynamicCoordinateGrid>();
-        mapping.Origin = transform.position;
+        mapping.Origin = GetComponent<Collider>().bounds.center;
         mapping.Init(this);
         initLocation = new Vector2(transform.position.x, transform.position.z);
         currLocation = transform.position;
         bAwake = true;
 
         Bounds bounds = GetComponent<Collider>().bounds;
-        float radius = Vector2.Distance(new Vector2(bounds.center.x + bounds.extents.x, bounds.center.y + bounds.extents.y), new Vector2(bounds.center.x, bounds.center.y));
+        float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
         tolerance = radius;
 
         Debug.Log("TEST");
@@ -87,8 +94,8 @@ public class Agent : MonoBehaviour
     {
         RaycastHit hit;
         int layerMask = 1 << 8;
-        //Debug.DrawLine(new Vector3(x, 5, z), new Vector3(x, -5, z), Color.red, 0.2f);
-        if (Physics.Raycast(new Vector3(x, 100, z), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, layerMask))
+        if (ShouldPrint) Debug.DrawLine(new Vector3((int)x, 5, (int)z), new Vector3((int)x, -5, (int)z), Color.yellow, 0.05f);
+        if (Physics.Raycast(new Vector3((int)x, 100, (int)z), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, layerMask))
         {
             return hit.point.y;
         }
@@ -103,12 +110,12 @@ public class Agent : MonoBehaviour
      * Unity event running every frame
      * Implements wandering functionality (mainly for debugging)
      */
-    void Update()
+    void FixedUpdate()
     {
         if (!bAwake) return; //Simply wait for simulation initialization
-        count += Time.deltaTime; //Time counter used for various methods within Update
+        count += Time.fixedDeltaTime * Time.timeScale; //Time counter used for various methods within Update
 
-        int updateInterval = 1; //Number of seconds to check for new pathing changes
+        float updateInterval = 0.05f; //Number of seconds to check for new pathing changes
         if (count > updateInterval && !planner.OnPath)
         {
             //Utilizes desired wandering algorithm to efficiently explore domain
@@ -133,14 +140,14 @@ public class Agent : MonoBehaviour
         //ReactiveCollision();
 
         //Execute calculated movement based on above 2D calculations, converting to relevent 3D space
-        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.deltaTime * movementSpeed)), this);
+        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.fixedDeltaTime * Time.timeScale * movementSpeed)), this, false, null, true, ShouldPrint);
 
         //Teleportation test implementation for debugging wander algorithm
         if (Input.GetKeyDown(KeyCode.G))
         {
 
             Vector2 loc = new Vector2(300, 351);
-            mapping.Move(loc, this, true, planner); //Teleport
+            mapping.Move(loc, this, true, planner, true, ShouldPrint); //Teleport
             Debug.Log("Welcome to your new destination at: " + loc);
         }
 
@@ -182,21 +189,27 @@ public class Agent : MonoBehaviour
         }
 
         count = 0;
-        QuadTree tree = new QuadTree();
-        tree.Construct(mapping, mapping.Origin, 0);
-        List<NodeDepth> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
+
+        if (tree == null || mapping.bQuadTreeNeedsRegen)
+        {
+            tree = new QuadTree();
+            tree.Construct(mapping, mapping.Origin, 1, ShouldPrint);
+            mapping.bQuadTreeNeedsRegen = false;
+        }
+        List<QuadTreeNode> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
         QuadTreeNode node;
 
         if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
         {
-            //Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
+            //if (ShouldPrint) Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
             node = null;
             visitedNodes.Clear();
             visitedCount = 0;
         }
         else
         {
-            while (visitedNodes.Contains(nodes[visitedCount].node) || nodes[visitedCount].node == tree.GetNode(new Vector2(transform.position.x, transform.position.z)))
+            //Debug.Log("NUM NODES: " + nodes.Count);
+            while (visitedNodes.Contains(nodes[visitedCount]) || nodes[visitedCount] == tree.GetNode(new Vector2(transform.position.x, transform.position.z)))
             {
                 visitedCount++;
                 if (visitedCount == nodes.Count)
@@ -206,22 +219,71 @@ public class Agent : MonoBehaviour
                     break;
                 }
             }
-            node = nodes[visitedCount].node;
+            node = nodes[visitedCount];
             visitedNodes.Add(node);
             visitedCount++;
         }
 
         if (node == null)
         {
-            mapping.Move(new Vector2(transform.position.x, transform.position.z), this, true);
-            planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 0.2f);
+            Vector3 origPos = transform.position;
+            mapping.Move(new Vector2((int)origPos.x - 1, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x) + 2, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x) + 2, ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x - 1), ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(origPos.x, origPos.z), this, true, planner, true, ShouldPrint);
+            Bounds bounds = GetComponent<Collider>().bounds;
+            Vector3 temp2 = origPos + (temp * Mathf.Clamp(Time.fixedDeltaTime * Time.timeScale * movementSpeed, 0, Vector3.Distance(bounds.center, bounds.center + bounds.extents)/2));
+            mapping.Move(new Vector2(temp2.x, temp2.z), this, true, planner, true, ShouldPrint);
         }
         else
         {
             Vector2 init = new Vector2(transform.position.x, transform.position.z);
-            Vector2 destination = new Vector2(node.x + AgentSize / 2, node.y + AgentSize / 2);
-            float dist = (destination - init).magnitude;
-            planner.Move(init, destination, mapping, dist / movementSpeed);
+            /*dx = max(centerX - rectLeft, rectRight - centerX);
+            dy = max(centerY - rectTop, rectBottom - centerY);*/
+            Vector2 bl = new Vector2(node.x, node.y);
+            Vector2 br = new Vector2(node.x + node.w, node.y);
+            Vector2 tl = new Vector2(node.x, node.y + node.h);
+            Vector2 tr = new Vector2(node.x + node.w, node.y + node.h);
+            Vector2 destination = new Vector2();
+
+            float blf = Vector2.Distance(bl, init);
+            float brf = Vector2.Distance(br, init);
+            float tlf = Vector2.Distance(tl, init);
+            float trf = Vector2.Distance(tr, init);
+
+            float currMax = 0;
+            if (blf > currMax)
+            {
+                currMax = blf;
+                destination = bl;
+            }
+            if (brf > currMax)
+            {
+                currMax = brf;
+                destination = br;
+            }
+            if (tlf > currMax)
+            {
+                currMax = tlf;
+                destination = tl;
+            }
+            if (trf > currMax)
+            {
+                destination = tr;
+            }
+
+            Vector2 dir = (destination - init);
+            float dist = dir.magnitude;
+            dir.Normalize();
+            destination += dir * tolerance;
+            if (tree == null || mapping.bQuadTreeNeedsRegen)
+            {
+                tree = new QuadTree();
+                tree.Construct(mapping, mapping.Origin, 1, ShouldPrint);
+                mapping.bQuadTreeNeedsRegen = false;
+            }
+            planner.Move(tree, init, destination, mapping, dist / movementSpeed, ShouldPrint);
         }
     }
 

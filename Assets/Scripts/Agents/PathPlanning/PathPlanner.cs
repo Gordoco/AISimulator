@@ -35,16 +35,16 @@ public class PathPlanner
      * Uses the A star algorithm to search for a valid path through the local grid's QuadTree
      * Returns based on ability to find a valid path
      */
-    public PathInfo CheckForValidPath(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
+    public PathInfo CheckForValidPath(QuadTree tree, Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f, bool bPrint = false)
     {
         List<Vector2> path = new List<Vector2>();
         List<QuadTreeNode> nodes = new List<QuadTreeNode>();
 
-        QuadTree tree = new QuadTree();
-        tree.Construct(mapping, mapping.Origin, time);
+        /*QuadTree tree = new QuadTree();
+        tree.Construct(mapping, mapping.Origin, time, bPrint);*/
 
         GenericDigraph graph = GenerateGraphFromQuadTree(initialLocation, location, tree);
-        List<int> pathIndecies = GenericAStar(graph, time, 1, false);
+        List<int> pathIndecies = GenericAStar(graph, time, 1, bPrint);
         if (pathIndecies == null)
         {
             Debug.Log("ERROR: Invalid Input to AStar");
@@ -120,7 +120,7 @@ public class PathPlanner
         while (finalNode != null)
         {
             path.Insert(0, graph.GetVertexIndex(finalNode.value));
-            if (finalNode.parent != null && shouldPrint) Debug.DrawLine(new Vector3(finalNode.value.x, height, finalNode.value.y), new Vector3(finalNode.parent.value.x, height, finalNode.parent.value.y), Color.magenta, time);
+            //if (finalNode.parent != null && shouldPrint) Debug.DrawLine(new Vector3(finalNode.value.x, height, finalNode.value.y), new Vector3(finalNode.parent.value.x, height, finalNode.parent.value.y), Color.magenta, time);
             finalNode = finalNode.parent;
         }
         return path;
@@ -130,19 +130,19 @@ public class PathPlanner
      * #### List<Vector2> OptimizePath(List<Vector2>)
      * Assumes path input is valid with non-zero length, applies rubber-banding to optimize path length
      */
-    private List<Vector2> OptimizePath(PathInfo pathInfo, float time = 0.2f)
+    private List<Vector2> OptimizePath(PathInfo pathInfo, float time = 0.2f, bool bPrint = false)
     {
         List<Vector2> arr = new List<Vector2>();
 
         GenericDigraph graph = GenerateGraphFromQuadTreePath(pathInfo);
-        graph.Print(1, time);
+        if (bPrint) graph.Print(1, time);
 
         //Run A* on directed graph created above
-        List<int> vertexIndecies = GenericAStar(graph, time, 1, false);
+        List<int> vertexIndecies = GenericAStar(graph, time, 1, bPrint);
         for (int i = 0; i < vertexIndecies.Count; i++) arr.Add(graph.GetVertex(vertexIndecies[i]));
 
         //Do Visibility Checks to Simplify Path Geometry
-        arr = VisibilitySimplification(pathInfo, arr, true, time, 1);
+        arr = VisibilitySimplification(pathInfo, arr, bPrint, time, 1);
 
         return arr;
     }
@@ -159,7 +159,7 @@ public class PathPlanner
 
         //Debugging error message
         if (pathPoints.Count > originalPath.nodes.Count + 1) Debug.Log("ERROR: Improper Path Length || Num Nodes: " + originalPath.nodes.Count + " Num Points: " + pathPoints.Count);
-
+        if (originalPath.nodes.Count == 0) Debug.Log("NO NODES");
         int lastVisiblePoint = 0;
         int lastAddedPoint = 0;
         for (int i = 0; i < pathPoints.Count; i++)
@@ -178,8 +178,9 @@ public class PathPlanner
                 lastAddedPoint = 0;
             }
 
-            for (int k = i1; k < (i2-i1) - 1; k++)
+            for (int k = i1; k < (i2-i1) - 2; k++)
             {
+                //Debug.Log(originalPath.nodes.Count);
                 Vector2[] edge = GetEdgePoints(originalPath.nodes[k], originalPath.nodes[k+1]);
                 Vector2 intersection;
                 if (!Intersects(pathPoints[lastVisiblePoint], pathPoints[i], edge[0], edge[1], out intersection))
@@ -353,14 +354,14 @@ public class PathPlanner
     * Checks for a valid path and interfaces with agent locomotion to traverse to the destination
     * Returns based on ability to conduct a move
     */
-    public bool Move(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
+    public bool Move(QuadTree tree, Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f, bool bPrint = false)
     {
         //Debug.Log("[DCG_Move] Trying To Move");
-        PathInfo pathInfo = CheckForValidPath(initialLocation, location, mapping, time);
+        PathInfo pathInfo = CheckForValidPath(tree, initialLocation, location, mapping, time, bPrint);
         if (pathInfo.path.Count != 0)
         {
             //Debug.Log("[DCG_Move] Success");
-            currentPath = OptimizePath(pathInfo, time);
+            currentPath = OptimizePath(pathInfo, time, bPrint);
             OnPath = true;
             return true;
         }
