@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 2;
+    public int MinSize = 1;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -18,6 +18,11 @@ public class QuadTree
      */
     public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f, bool bPrint = false)
     {
+        /*Vector3 line1S = new Vector3(offset.x + mapping.gridCorner[0], 5, offset.z + mapping.gridCorner[1]);
+        Vector3 line1E = new Vector3(offset.x + mapping.gridCorner[0], -5, offset.z + mapping.gridCorner[1]);
+        Debug.DrawLine(line1S, line1E, Color.cyan, 20);*/
+
+
         root = new QuadTreeNode(offset.x + mapping.gridCorner[0], offset.z + mapping.gridCorner[1], 
             mapping.width - 1, mapping.height - 1);
         root.tree = this;
@@ -33,6 +38,26 @@ public class QuadTree
     public QuadTreeNode GetNode(Vector2 location)
     {
         return root.GetNode(location);
+    }
+
+    public QuadTreeNode GetNearestFreeNode(Vector2 location)
+    {
+        QuadTreeNode currNode = GetNode(location);
+        if (currNode.nodeType == NodeIDs.Free) return currNode;
+        List<QuadTreeNode> neighbors = currNode.GetDirections();
+        float val = Mathf.Infinity;
+        QuadTreeNode currNearest = currNode;
+        for (int i = 0; i < neighbors.Count; i++)
+        {
+            if (neighbors[i].nodeType != NodeIDs.Free) continue;
+            float dist = Vector2.Distance(neighbors[i].GetCenterPoint(), location);
+            if (dist < val)
+            {
+                val = dist;
+                currNearest = neighbors[i];
+            }
+        }
+        return currNearest;
     }
 
     /**
@@ -155,9 +180,9 @@ public class QuadTree
         bool foundValid = false;
         bool foundInvalid = false;
 
-        for (int i = (int)node.x; i < node.x + node.w; i++)
+        for (int i = (int)node.x; i <= node.x + node.w; i++)
         {
-            for (int j = (int)node.y; j < node.y + node.h; j++)
+            for (int j = (int)node.y; j <= node.y + node.h; j++)
             {
                 //Enum representing location status, transformed back to world origin from agent origin
                 MappingIDs map = mapping.GetMapping((int)(i - Origin.x), (int)(j - Origin.y));
@@ -172,7 +197,7 @@ public class QuadTree
                 else lineCol = Color.red;
 
                 //DEBUG: Visualize the mapping used by the current tree
-                //if (bPrint && map == MappingIDs.Free) Debug.DrawLine(init, end, lineCol, 0.2f);
+                //if (bPrint) Debug.DrawLine(init, end, lineCol, 0.2f);
                 //-----------------------------------------------------
 
                 if (map == MappingIDs.Full || map == MappingIDs.Undefined)
@@ -200,7 +225,7 @@ public class QuadTree
         else if (foundValid && foundInvalid)
         {
             node.nodeType = NodeIDs.Mixed;
-            if (node.w > MinSize && node.h > MinSize)
+            if (node.w >= MinSize*2 && node.h >= MinSize*2)
             {
                 return true;
             }

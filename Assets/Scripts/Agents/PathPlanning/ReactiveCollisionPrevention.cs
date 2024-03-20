@@ -7,20 +7,31 @@ using UnityEngine;
  */
 public class ReactiveCollisionPrevention
 {
-    public ReactiveCollisionPrevention(GameObject obj, Collider objCollider, DynamicCoordinateGrid mapping, bool bPrint = false)
+
+    private Vector3 oldLoc;
+
+    public ReactiveCollisionPrevention() { }
+
+    public ReactiveCollisionPrevention(GameObject obj, Vector3 oldLoc, Collider objCollider, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
+        this.oldLoc = oldLoc;
         Bounds bounds = objCollider.bounds;
-        float radius = Vector2.Distance(new Vector2(bounds.center.x + bounds.extents.x, bounds.center.y + bounds.extents.y), new Vector2(bounds.center.x, bounds.center.y));
-        RaycastHit[] hits = Physics.SphereCastAll(bounds.center, radius, Vector3.down, 0f);
+        float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
+        Vector3 point = bounds.center;
+        //point.y += 20;
+        RaycastHit[] hits = Physics.SphereCastAll(point, radius, Vector3.down, 0f);
+        //mapping.SetupGizmoDraw(bounds.center, radius);
+        //Debug.Log("NUM HITS: " + hits.Length);
         for (int i = 0; i < hits.Length; i++)
         {
             if (hits[i].collider.gameObject != obj)
             {
                 //SOLVE COLLISION
-                Debug.Log("WE HAVE A COLLISION BOYS: " + hits[i].collider.gameObject.name);
-                if (hits[i].collider.gameObject.GetComponent<Agent>()) HandleAgentAgentCollision(obj, hits[i].collider, radius, mapping, bPrint);
-                else 
+                //Debug.Log("WE HAVE A COLLISION BOYS: " + hits[i].collider.gameObject.name);
+                if (hits[i].collider.gameObject.GetComponent<Agent>()) { }// HandleAgentAgentCollision(obj, hits[i].collider, radius, mapping, bPrint);
+                else
                 {
+                    //Debug.Log("WALL");
                     Vector3[] points = new Vector3[2];
 
                     Vector3 normal = GetCorrectNormalForSphere(hits[i], obj.transform.forward);
@@ -28,6 +39,7 @@ public class ReactiveCollisionPrevention
                     Vector3 point1 = bounds.center;
                     if (Physics.Raycast(point1, -normal, out hit, radius, 1 << 8))
                     {
+                        Debug.Log("ADJUSTING");
                         float x = Vector3.Distance(point1, hit.point);
                         float y = Mathf.Sqrt(Mathf.Pow(radius, 2) - Mathf.Pow(x, 2));
 
@@ -39,9 +51,49 @@ public class ReactiveCollisionPrevention
 
                         if (bPrint) DrawCircle(bounds.center, radius, 60, Color.blue, 5);
                     }
+                    else
+                    {
+                    }
                 }
             }
         }
+    }
+
+    public bool CheckIfShouldMove(GameObject owner, Vector3 newPos, DynamicCoordinateGrid mapping)
+    {
+        Bounds bounds = owner.GetComponent<Collider>().bounds;
+        float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
+        RaycastHit[] hits = Physics.SphereCastAll(newPos, radius, Vector3.down, 0f);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i].collider.gameObject != owner)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+        private void UndoMove(DynamicCoordinateGrid mapping, GameObject obj)
+    {
+        Debug.Log(oldLoc);
+        mapping.Move(mapping.toVector2(oldLoc), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+    }
+
+    private bool CheckForSecondaryCollision(Vector3 newLoc, float radius, Bounds objBounds, GameObject obj)
+    {
+        Bounds bounds = obj.GetComponent<Collider>().bounds;
+        newLoc.y += 20f;
+        RaycastHit[] hits = Physics.SphereCastAll(newLoc, radius, Vector3.down, 20f);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i].collider.gameObject != obj)
+            {
+                Debug.Log("CANT MOVE: HIT " + hits[i].collider.gameObject.name);
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
@@ -139,7 +191,7 @@ public class ReactiveCollisionPrevention
         Vector2 selfCenter = new Vector2(selfBounds.center.x, selfBounds.center.z);
         Vector2 otherCenter = new Vector2(otherBounds.center.x, otherBounds.center.z);
 
-        Debug.Log("Adjusting Position, Overlapped Locations: " + selfBounds.center);
+        //Debug.Log("Adjusting Position, Overlapped Locations: " + selfBounds.center);
 
         Vector2[] intersectionPoints = CircleCircleIntersection(radius, selfCenter, radius, otherCenter);
 
@@ -157,7 +209,7 @@ public class ReactiveCollisionPrevention
             //Vector3 locationToMove = new Vector3(locationToMove2D.x, obj.transform.position.y, locationToMove2D.y);
 
             //TODO: Add an additional SphereCastAll at this point and if colliding flag agent as "CANTMOVE"
-            mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, bPrint);
+            if (!CheckForSecondaryCollision(locationToMove2D, radius, selfBounds, obj)) mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, bPrint);
 
             //DEBUG: Print
             //Print(obj, radius, selfCenter, radius, otherCenter, locationToMove2D);
@@ -220,6 +272,58 @@ public class ReactiveCollisionPrevention
         }
     }
 
+    public static Vector3[] GetCircleIntersections(Vector3 position, float radius, int segments)
+    {
+        // If either radius or number of segments are less or equal to 0, skip drawing
+        if (radius <= 0.0f || segments <= 0)
+        {
+            return null;
+        }
+
+        // Single segment of the circle covers (360 / number of segments) degrees
+        float angleStep = (360.0f / segments);
+        RaycastHit[] hits = new RaycastHit[2]; //Expect at most 2 hits
+        int count = 0; //Index for the next hit
+        // Result is multiplied by Mathf.Deg2Rad constant which transforms degrees to radians
+        // which are required by Unity's Mathf class trigonometry methods
+
+        angleStep *= Mathf.Deg2Rad;
+
+        // lineStart and lineEnd variables are declared outside of the following for loop
+        Vector3 lineStart = Vector3.zero;
+        Vector3 lineEnd = Vector3.zero;
+
+        for (int i = 0; i < segments; i++)
+        {
+            // Line start is defined as starting angle of the current segment (i)
+            lineStart.x = Mathf.Cos(angleStep * i);
+            lineStart.z = Mathf.Sin(angleStep * i);
+
+            // Line end is defined by the angle of the next segment (i+1)
+            lineEnd.x = Mathf.Cos(angleStep * (i + 1));
+            lineEnd.z = Mathf.Sin(angleStep * (i + 1));
+
+            // Results are multiplied so they match the desired radius
+            lineStart *= radius;
+            lineEnd *= radius;
+
+            // Results are offset by the desired position/origin 
+            lineStart += position;
+            lineEnd += position;
+
+            lineStart.y = 2.5f;
+            lineEnd.y = 2.5f;
+
+            // Points are connected using DrawLine method and using the passed color
+            Vector3 dir = lineEnd - lineStart;
+            if (Physics.Raycast(lineStart, dir.normalized, out hits[count], dir.magnitude)) count++;
+        }
+        Vector3[] locs = new Vector3[2];
+        if (count == 0) return null;
+        for (int i = 0; i < count; i++) locs[i] = hits[i].point; //Setup vectors based on how many successful casts
+        return locs;
+    }
+
     private void HandleAgentWallCollision(GameObject obj, Collider hitCollider, Vector3 normal, Vector3[] circleIntercepts, float radius, DynamicCoordinateGrid mapping, bool bPrint = false)
     {
         Vector3 moveDir = obj.transform.forward;
@@ -232,12 +336,11 @@ public class ReactiveCollisionPrevention
         if (dist1 <= dist2) posToUse = circleIntercepts[0];
         else posToUse = circleIntercepts[1];
 
-        Vector3 destination = posToUse + (normal * (radius + 1));
-        Debug.Log("DESTINATION: " + destination);
+        Vector3 destination = posToUse + (normal * (radius + 0.1f));
+        Vector3 altDestination = circleIntercepts[1] + (normal * (radius + 0.1f));
+        /*Debug.Log("DESTINATION: " + destination);
         Debug.Log("posToUse: " + posToUse);
-        Debug.Log("(normal * radius): " + (normal * radius));
-
-        Vector3 DEBUG_destination = circleIntercepts[1] + (normal * radius);
+        Debug.Log("(normal * radius): " + (normal * radius));*/
 
         if (bPrint)
         {
@@ -245,8 +348,16 @@ public class ReactiveCollisionPrevention
             Debug.DrawLine(new Vector3(circleIntercepts[1].x, -5, circleIntercepts[1].z), new Vector3(circleIntercepts[1].x, 5, circleIntercepts[1].z), Color.gray, 5);
         }
 
-        mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
-        //obj.GetComponent<Agent>().Teleported();
+        if (!CheckForSecondaryCollision(destination, radius, obj.GetComponent<Collider>().bounds, obj)) mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+        else if (!CheckForSecondaryCollision(altDestination, radius, obj.GetComponent<Collider>().bounds, obj))
+        {
+            mapping.Move(new Vector2(altDestination.x, altDestination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+            //Debug.Break();
+        }
+        else
+        {
+            UndoMove(mapping, obj);
+        }
         //Debug.Break();
     }
 }

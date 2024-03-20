@@ -133,6 +133,7 @@ MonoBehaviour:
   movementSpeed: 30
   AgentSize: 1
   ShouldPrint: 0
+  movementDirection: {x: 0, y: 0, z: 0}
 --- !u!114 &8092980767597770478
 MonoBehaviour:
   m_ObjectHideFlags: 0
