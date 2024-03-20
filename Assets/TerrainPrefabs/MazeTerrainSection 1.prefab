@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 7550864875273543301}
   - component: {fileID: 7279356585682544224}
   - component: {fileID: 593663642372081486}
-  - component: {fileID: 4960432308271201088}
   - component: {fileID: 7001587057612440855}
+  - component: {fileID: 7113950373004625880}
   m_Layer: 8
   m_Name: MazeTerrainSection 1
   m_TagString: Untagged
@@ -85,7 +85,34 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &4960432308271201088
+--- !u!114 &7001587057612440855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 203426771623560441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b6cff35125dda44ab83be4025fc2e4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xSize: 100
+  zSize: 100
+  constOffset: 0
+  partitions: 10
+  severity: 10
+  showVerts: 0
+  showSideVerts: 0
+  scale: 1
+  rand: 0.1
+  id: 0
+  foliageGenerators: []
+  mazeHeight: 5
+  unitSize: 5
+  sourceTex: {fileID: 2800000, guid: 3b635c276de854c48af260d0c5f5a6f8, type: 3}
+  hasFloor: 1
+--- !u!64 &7113950373004625880
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -99,30 +126,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &7001587057612440855
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 203426771623560441}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b6cff35125dda44ab83be4025fc2e4e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  xSize: 1000
-  zSize: 1000
-  constOffset: 0
-  partitions: 10
-  severity: 10
-  showVerts: 0
-  showSideVerts: 0
-  scale: 1
-  rand: 0.1
-  id: 0
-  foliageGenerators: []
-  mazeHeight: 10
-  unitSize: 10
-  sourceTex: {fileID: 2800000, guid: 3b635c276de854c48af260d0c5f5a6f8, type: 3}
-  hasFloor: 1

@@ -10,14 +10,21 @@ public class Agent : MonoBehaviour
     public float movementSpeed = 1;
     public float AgentSize = 1;
 
+    [SerializeField] private bool ShouldPrint = false;
+
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
     private Vector2 initLocation; //TESTING
     private Vector3 currLocation;
-    private Vector3 movementDirection = Vector3.zero;
+    public Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
     private bool bAwake = false;
+
+    QuadTree tree;
+
+    public DynamicCoordinateGrid GetMapping() { return mapping; }
+    public PathPlanner GetPlanner() { return planner; }
 
     /**
      * #### void Init()
@@ -28,13 +35,27 @@ public class Agent : MonoBehaviour
         planner = new PathPlanner();
 
         mapping = GetComponent<DynamicCoordinateGrid>();
-        mapping.Origin = transform.position;
+        mapping.Origin = GetComponent<Collider>().bounds.center;
         mapping.Init(this);
         initLocation = new Vector2(transform.position.x, transform.position.z);
         currLocation = transform.position;
         bAwake = true;
 
+        Bounds bounds = GetComponent<Collider>().bounds;
+        float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
+        tolerance = radius;
+
         Debug.Log("TEST");
+    }
+
+    /**
+     * #### void OnCollisionEnter(Collision)
+     * Unity method for evaluating collisions.
+     * Used to error check collision prevention systems.
+     */
+    public void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log("ERROR: Agent collided with another object. Agent Name: " + gameObject.name + " Other Obj Name: " + collision.gameObject.name);
     }
 
     /**
@@ -73,126 +94,226 @@ public class Agent : MonoBehaviour
     {
         RaycastHit hit;
         int layerMask = 1 << 8;
-        //Debug.DrawLine(new Vector3(x, 5, z), new Vector3(x, -5, z), Color.red, 0.2f);
-        if (Physics.Raycast(new Vector3(x, 100, z), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, layerMask))
+        if (ShouldPrint) Debug.DrawLine(new Vector3((int)x, 5, (int)z), new Vector3((int)x, -5, (int)z), Color.yellow, 0.05f);
+        if (Physics.Raycast(new Vector3((int)x, 100, (int)z), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, layerMask))
         {
             return hit.point.y;
         }
         return -1;
     }
 
-    float count = 0;
-    int progress = 0;
-    float tolerance = 0.05f;
+    float count = 0; //Continuous timer
+    int progress = 0; //Progress in index units through current path
+    float tolerance = 0.05f; //Acceptable vector equivalence value
     /**
      * #### void Update()
      * Unity event running every frame
      * Implements wandering functionality (mainly for debugging)
      */
-    void Update()
+    void FixedUpdate()
     {
-        if (!bAwake) return;
-        count += Time.deltaTime;
-        if (count > 1 && !planner.OnPath)
+        if (!bAwake) return; //Simply wait for simulation initialization
+        count += Time.fixedDeltaTime * Time.timeScale; //Time counter used for various methods within Update
+
+        float updateInterval = 0.05f; //Number of seconds to check for new pathing changes
+        if (count > updateInterval && !planner.OnPath)
         {
-            Vector3 temp = Vector3.zero;
-            var rand = Random.Range(0, 4);
-            switch (rand)
-            {
-                case 0:
-                    temp = new Vector3(0, 0, 1f);
-                    break;
-                case 1:
-                    temp = new Vector3(0, 0, -1f);
-                    break;
-                case 2:
-                    temp = new Vector3(-1f, 0, 0);
-                    break;
-                case 3:
-                    temp = new Vector3(1f, 0, 0);
-                    break;
-            }
-
-            count = 0;
-            QuadTree tree = new QuadTree();
-            tree.Construct(mapping, mapping.Origin, 0);
-            List<NodeDepth> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
-            QuadTreeNode node;
-            /*if (nodes.Count != 0) node = nodes[nodes.Count - 1].node;
-            else node = null;*/
-
-            if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
-            {
-                Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
-                node = null;
-                visitedNodes.Clear();
-                visitedCount = 0;
-            }
-            else
-            {
-                while (visitedNodes.Contains(nodes[visitedCount].node) || nodes[visitedCount].node == tree.GetNode(new Vector2(transform.position.x, transform.position.z)))
-                {
-                    visitedCount++;
-                    if (visitedCount == nodes.Count)
-                    {
-                        visitedNodes.Clear();
-                        visitedCount = 0;
-                        break;
-                    }
-                }
-                node = nodes[visitedCount].node;
-                visitedNodes.Add(node);
-                visitedCount++;
-            }
-
-            if (node == null)
-            {
-                planner.Move(new Vector2(transform.position.x, transform.position.z), new Vector2(transform.position.x + temp.x, transform.position.z + temp.z), mapping, 2);
-            }
-            else
-            {
-                Vector2 init = new Vector2(transform.position.x, transform.position.z);
-                Vector2 destination = new Vector2(node.x + AgentSize / 2, node.y + AgentSize / 2);
-                float dist = (destination - init).magnitude;
-                planner.Move(init, destination, mapping, 0.75f/*dist / movementSpeed*/);
-            }
+            //Utilizes desired wandering algorithm to efficiently explore domain
+            //------------------------------------------------------------------
+            WanderAlgorithm();
+            //------------------------------------------------------------------
         }
+        //If calculated to be on a path, execute next unit-time-step movement
         else if (planner.OnPath)
         {
-            if (progress >= planner.currentPath.Count)
-            {
-                progress = 0;
-                planner.OnPath = false;
-                planner.currentPath = null;
-                movementDirection = Vector3.zero;
-                count = 1;
-            }
-            else if (transform.position.x < planner.currentPath[progress].x + tolerance && transform.position.x > planner.currentPath[progress].x - tolerance &&
-                transform.position.z < planner.currentPath[progress].y + tolerance && transform.position.z > planner.currentPath[progress].y - tolerance)
-            {
-                progress++;
-            }
-            else {
-                //Add scripted move based on path plan
-                movementDirection = new Vector3(planner.currentPath[progress].x, 0, planner.currentPath[progress].y) - new Vector3(transform.position.x, transform.position.y, transform.position.z);
-                movementDirection.Normalize();
-            }
+            //----------------------------------------------------------
+            PathExecution();
+            //----------------------------------------------------------
         }
         else
         {
+            //If no relevent movement is available stop movement
             movementDirection = Vector3.zero;
         }
 
-        //gameObject.transform.position += (movementDirection * Time.deltaTime * movementSpeed);
-        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.deltaTime * movementSpeed)), this);
+        //Directly Pre-Move, utilize reactive collision prevention to ensure no collision
+        //ReactiveCollision();
 
+        //Execute calculated movement based on above 2D calculations, converting to relevent 3D space
+        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.fixedDeltaTime * Time.timeScale * movementSpeed)), this, false, null, true, ShouldPrint);
+
+        //Teleportation test implementation for debugging wander algorithm
         if (Input.GetKeyDown(KeyCode.G))
         {
+
             Vector2 loc = new Vector2(300, 351);
-            mapping.Move(loc, this, true, planner); //Teleport
+            mapping.Move(loc, this, true, planner, true, ShouldPrint); //Teleport
             Debug.Log("Welcome to your new destination at: " + loc);
         }
 
+        //Save previous frames location for use calculating position deltas
         currLocation = transform.position;
     }
+
+    public void Teleported()
+    {
+        progress = 0;
+        movementDirection = Vector3.zero;
+        count = 1;
+        visitedNodes.Clear();
+        visitedCount = 0;
+    }
+
+    /**
+     * #### Wander Algorithm
+     * Currently in a test implementation format, should implement an efficent domain-independant exploration algorithm
+     */
+    private void WanderAlgorithm()
+    {
+        Vector3 temp = Vector3.zero;
+        var rand = Random.Range(0, 4);
+        switch (rand)
+        {
+            case 0:
+                temp = new Vector3(0, 0, 1f);
+                break;
+            case 1:
+                temp = new Vector3(0, 0, -1f);
+                break;
+            case 2:
+                temp = new Vector3(-1f, 0, 0);
+                break;
+            case 3:
+                temp = new Vector3(1f, 0, 0);
+                break;
+        }
+
+        count = 0;
+
+        if (tree == null || mapping.bQuadTreeNeedsRegen)
+        {
+            tree = new QuadTree();
+            tree.Construct(mapping, mapping.Origin, 1, ShouldPrint);
+            mapping.bQuadTreeNeedsRegen = false;
+        }
+        List<QuadTreeNode> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
+        QuadTreeNode node;
+
+        if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
+        {
+            //if (ShouldPrint) Debug.Log("Uh Oh, Seems we don't got any nodes to visit");
+            node = null;
+            visitedNodes.Clear();
+            visitedCount = 0;
+        }
+        else
+        {
+            //Debug.Log("NUM NODES: " + nodes.Count);
+            while (visitedNodes.Contains(nodes[visitedCount]) || nodes[visitedCount] == tree.GetNode(new Vector2(transform.position.x, transform.position.z)))
+            {
+                visitedCount++;
+                if (visitedCount == nodes.Count)
+                {
+                    visitedNodes.Clear();
+                    visitedCount = 0;
+                    break;
+                }
+            }
+            node = nodes[visitedCount];
+            visitedNodes.Add(node);
+            visitedCount++;
+        }
+
+        if (node == null)
+        {
+            Vector3 origPos = transform.position;
+            mapping.Move(new Vector2((int)origPos.x - 1, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x) + 2, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x) + 2, ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(((int)origPos.x - 1), ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
+            mapping.Move(new Vector2(origPos.x, origPos.z), this, true, planner, true, ShouldPrint);
+            Bounds bounds = GetComponent<Collider>().bounds;
+            Vector3 temp2 = origPos + (temp * Mathf.Clamp(Time.fixedDeltaTime * Time.timeScale * movementSpeed, 0, Vector3.Distance(bounds.center, bounds.center + bounds.extents)/2));
+            mapping.Move(new Vector2(temp2.x, temp2.z), this, true, planner, true, ShouldPrint);
+        }
+        else
+        {
+            Vector2 init = new Vector2(transform.position.x, transform.position.z);
+            /*dx = max(centerX - rectLeft, rectRight - centerX);
+            dy = max(centerY - rectTop, rectBottom - centerY);*/
+            Vector2 bl = new Vector2(node.x, node.y);
+            Vector2 br = new Vector2(node.x + node.w, node.y);
+            Vector2 tl = new Vector2(node.x, node.y + node.h);
+            Vector2 tr = new Vector2(node.x + node.w, node.y + node.h);
+            Vector2 destination = new Vector2();
+
+            float blf = Vector2.Distance(bl, init);
+            float brf = Vector2.Distance(br, init);
+            float tlf = Vector2.Distance(tl, init);
+            float trf = Vector2.Distance(tr, init);
+
+            float currMax = 0;
+            if (blf > currMax)
+            {
+                currMax = blf;
+                destination = bl;
+            }
+            if (brf > currMax)
+            {
+                currMax = brf;
+                destination = br;
+            }
+            if (tlf > currMax)
+            {
+                currMax = tlf;
+                destination = tl;
+            }
+            if (trf > currMax)
+            {
+                destination = tr;
+            }
+
+            Vector2 dir = (destination - init);
+            float dist = dir.magnitude;
+            dir.Normalize();
+            destination += dir * tolerance;
+            if (tree == null || mapping.bQuadTreeNeedsRegen)
+            {
+                tree = new QuadTree();
+                tree.Construct(mapping, mapping.Origin, 1, ShouldPrint);
+                mapping.bQuadTreeNeedsRegen = false;
+            }
+            planner.Move(tree, init, destination, mapping, dist / movementSpeed, ShouldPrint);
+        }
+    }
+
+    /**
+     * #### PathExecution()
+     * Utilizes calculated path to plan motion direction for the next timestep
+     */
+    private void PathExecution()
+    {
+        if (progress >= planner.currentPath.Count)
+        {
+            progress = 0;
+            planner.OnPath = false;
+            planner.currentPath = null;
+            movementDirection = Vector3.zero;
+            count = 1;
+        }
+        else if (transform.position.x < planner.currentPath[progress].x + tolerance && transform.position.x > planner.currentPath[progress].x - tolerance &&
+            transform.position.z < planner.currentPath[progress].y + tolerance && transform.position.z > planner.currentPath[progress].y - tolerance)
+        {
+            progress++;
+            movementDirection = Vector3.zero;
+        }
+        else
+        {
+            //Add scripted move based on path plan
+            movementDirection = new Vector3(planner.currentPath[progress].x, 0, planner.currentPath[progress].y) - new Vector3(transform.position.x, 0, transform.position.z);
+            movementDirection.Normalize();
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up);
+        }
+    }
+    
 }
