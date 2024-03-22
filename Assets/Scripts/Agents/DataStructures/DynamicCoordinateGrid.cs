@@ -29,11 +29,15 @@ public class DynamicCoordinateGrid : MonoBehaviour
     //{
     public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false, PathPlanner planner = null, bool bCheckCollision = true, bool bPrint = false)
     {
-        ReactiveCollisionPrevention CP = new ReactiveCollisionPrevention();
-        if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this))
+        if (bCheckCollision)
         {
-            owner.GetPlanner().CancelPath();
-            return;
+            ReactiveCollisionPrevention CP = new ReactiveCollisionPrevention();
+            Vector3 CollisionDir;
+            if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this, out CollisionDir))
+            {
+                if (planner != null) planner.CancelPath(true);
+                return;
+            }
         }
         //Debug.Log("BEFORE MOVE: " + oldLoc);
 

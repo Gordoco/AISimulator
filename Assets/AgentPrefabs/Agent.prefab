@@ -150,6 +150,7 @@ MonoBehaviour:
   height: 0
   Origin: {x: 0, y: 0, z: 0}
   gridCorner: 0000000000000000
+  bQuadTreeNeedsRegen: 1
 --- !u!65 &-4175849501445752044
 BoxCollider:
   m_ObjectHideFlags: 0

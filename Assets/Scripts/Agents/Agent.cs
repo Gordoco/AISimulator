@@ -19,7 +19,7 @@ public class Agent : MonoBehaviour
     public Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
-    private bool bAwake = false;
+    public bool bAwake = false;
 
     QuadTree tree;
 
@@ -104,6 +104,7 @@ public class Agent : MonoBehaviour
 
     float count = 0; //Continuous timer
     int progress = 0; //Progress in index units through current path
+    float updateInterval = 0.05f;
     float tolerance = 0.05f; //Acceptable vector equivalence value
     /**
      * #### void Update()
@@ -113,10 +114,21 @@ public class Agent : MonoBehaviour
     void FixedUpdate()
     {
         if (!bAwake) return; //Simply wait for simulation initialization
-        count += Time.fixedDeltaTime * Time.timeScale; //Time counter used for various methods within Update
+        count += Time.fixedDeltaTime; //Time counter used for various methods within Update
 
-        float updateInterval = 0.05f; //Number of seconds to check for new pathing changes
-        if (count > updateInterval && !planner.OnPath)
+        if (false)
+        {
+            //If the goal is detected in local vision, head there
+        }
+        else if (false)
+        {
+            //If a grounding is detected in local vision and demonstration is off cooldown, demonstrate it
+        }
+        else if (false)
+        {
+            //If the criteria for generating a grounding are met, create a new grounding
+        }
+        else if (count > updateInterval && !planner.OnPath)
         {
             //Utilizes desired wandering algorithm to efficiently explore domain
             //------------------------------------------------------------------
@@ -136,20 +148,10 @@ public class Agent : MonoBehaviour
             movementDirection = Vector3.zero;
         }
 
-        //Directly Pre-Move, utilize reactive collision prevention to ensure no collision
-        //ReactiveCollision();
-
         //Execute calculated movement based on above 2D calculations, converting to relevent 3D space
-        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection * Time.fixedDeltaTime * Time.timeScale * movementSpeed)), this, false, null, true, ShouldPrint);
-
-        //Teleportation test implementation for debugging wander algorithm
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-
-            Vector2 loc = new Vector2(300, 351);
-            mapping.Move(loc, this, true, planner, true, ShouldPrint); //Teleport
-            Debug.Log("Welcome to your new destination at: " + loc);
-        }
+        //Vector3 test1 = transform.position;
+        mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection.normalized * Time.fixedDeltaTime * movementSpeed)), this, false, planner, true, ShouldPrint);
+        //if (planner.bCollisionReset && transform.position != test1) Debug.Log("COLLISION BUT WE STILL MOVED");
 
         //Save previous frames location for use calculating position deltas
         currLocation = transform.position;
@@ -170,6 +172,7 @@ public class Agent : MonoBehaviour
      */
     private void WanderAlgorithm()
     {
+        updateInterval = 0.05f;
         Vector3 temp = Vector3.zero;
         var rand = Random.Range(0, 4);
         switch (rand)
@@ -196,8 +199,14 @@ public class Agent : MonoBehaviour
             tree.Construct(mapping, mapping.Origin, 1, ShouldPrint);
             mapping.bQuadTreeNeedsRegen = false;
         }
-        List<QuadTreeNode> nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
+
+        List<QuadTreeNode> nodes;
+        if (!planner.bCollisionReset || planner.collisionDir == Vector3.zero) nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
+        else nodes = tree.GetFurthestFreeNodesInDir(new Vector2(transform.position.x, transform.position.z), new Vector2(planner.collisionDir.x, planner.collisionDir.z));
         QuadTreeNode node;
+
+        planner.bCollisionReset = false;
+        updateInterval = 0.15f;
 
         if (nodes == null || nodes.Count == 0 || visitedCount >= nodes.Count)
         {
@@ -231,10 +240,11 @@ public class Agent : MonoBehaviour
             mapping.Move(new Vector2(((int)origPos.x) + 2, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
             mapping.Move(new Vector2(((int)origPos.x) + 2, ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
             mapping.Move(new Vector2(((int)origPos.x - 1), ((int)origPos.z) + 2), this, true, planner, false, ShouldPrint);
-            mapping.Move(new Vector2(origPos.x, origPos.z), this, true, planner, true, ShouldPrint);
-            Bounds bounds = GetComponent<Collider>().bounds;
-            Vector3 temp2 = origPos + (temp * Mathf.Clamp(Time.fixedDeltaTime * Time.timeScale * movementSpeed, 0, Vector3.Distance(bounds.center, bounds.center + bounds.extents)/2));
-            mapping.Move(new Vector2(temp2.x, temp2.z), this, true, planner, true, ShouldPrint);
+            mapping.Move(new Vector2(origPos.x, origPos.z), this, true, planner, false, ShouldPrint);
+            /*Bounds bounds = GetComponent<Collider>().bounds;
+            Vector3 temp2 = origPos + (temp * Mathf.Clamp(Time.deltaTime * movementSpeed, 0, Vector3.Distance(bounds.center, bounds.center + bounds.extents)/2));
+            mapping.Move(new Vector2(temp2.x, temp2.z), this, false, planner, true, ShouldPrint);*/
+            movementDirection = temp.normalized;
         }
         else
         {

@@ -8,6 +8,9 @@ using UnityEngine;
 public class PathPlanner
 {
     public bool OnPath = false;
+    public bool bCollisionReset = false;
+    public Vector3 collisionDir;
+
     public List<Vector2> currentPath;
     private Agent owner = null;
 
@@ -181,6 +184,7 @@ public class PathPlanner
             for (int k = i1; k < (i2-i1) - 2; k++)
             {
                 //Debug.Log(originalPath.nodes.Count);
+                if (k < 0 || k >= originalPath.nodes.Count || k + 1 < 0 || k + 1 >= originalPath.nodes.Count) continue;
                 Vector2[] edge = GetEdgePoints(originalPath.nodes[k], originalPath.nodes[k+1]);
                 Vector2 intersection;
                 if (!Intersects(pathPoints[lastVisiblePoint], pathPoints[i], edge[0], edge[1], out intersection))
@@ -368,9 +372,11 @@ public class PathPlanner
         return false;
     }
 
-    public void CancelPath()
+    public void CancelPath(bool bCollision = false, Vector3 collisionDir = new Vector3())
     {
         OnPath = false;
         currentPath = null;
+        bCollisionReset = bCollision;
+        this.collisionDir = collisionDir;
     }
 }

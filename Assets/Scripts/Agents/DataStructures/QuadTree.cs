@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 1;
+    public float MinSize = 1.5f;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -92,7 +92,32 @@ public class QuadTree
             finalArr.Add(furthestNode);
             neighbors = furthestNode.GetDirections();
         }
+        finalArr.Remove(myNode);
         return finalArr;
+    }
+
+    public List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2 location, Vector2 dir) 
+    {
+        List<QuadTreeNode> arr = GetFurthestFreeNodes(location);
+        if (arr == null || arr.Count <= 0) return null;
+        int x = -1;
+        for (int i = arr.Count - 1; i >= 0; i--)
+        {
+            if (Vector2.Dot((arr[i].GetCenterPoint() - location).normalized, -dir) > 0.5f)
+            {
+                x = i;
+                break;
+            }
+        }
+
+        if (x > -1 && x < arr.Count)
+        {
+            QuadTreeNode temp = arr[0];
+            arr[0] = arr[x];
+            arr[x] = temp;
+        }
+
+        return arr;
     }
 
     /**

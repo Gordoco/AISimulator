@@ -59,25 +59,31 @@ public class ReactiveCollisionPrevention
         }
     }
 
-    public bool CheckIfShouldMove(GameObject owner, Vector3 newPos, DynamicCoordinateGrid mapping)
+    public bool CheckIfShouldMove(GameObject owner, Vector3 newPos, DynamicCoordinateGrid mapping, out Vector3 dir)
     {
         Bounds bounds = owner.GetComponent<Collider>().bounds;
         float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
-        RaycastHit[] hits = Physics.SphereCastAll(newPos, radius, Vector3.down, 0f);
+        RaycastHit[] hits = Physics.SphereCastAll(new Vector3(newPos.x, newPos.y + 20, newPos.z), radius, Vector3.down, 20f);
         for (int i = 0; i < hits.Length; i++)
         {
             if (hits[i].collider.gameObject != owner)
             {
+                //DrawCircle(newPos, radius, 60, Color.red, 1);
+                if (hits[i].point != Vector3.zero) dir = (hits[i].point - owner.transform.position).normalized;
+                else dir = Vector3.zero;
                 return false;
             }
         }
+        dir = Vector3.zero;
+        if (hits.Length > 1) return false;
+        //(newPos, radius, 60, Color.green, 1);
         return true;
     }
 
-        private void UndoMove(DynamicCoordinateGrid mapping, GameObject obj)
+    private void UndoMove(DynamicCoordinateGrid mapping, GameObject obj)
     {
         Debug.Log(oldLoc);
-        mapping.Move(mapping.toVector2(oldLoc), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+        //mapping.Move(mapping.toVector2(oldLoc), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
     }
 
     private bool CheckForSecondaryCollision(Vector3 newLoc, float radius, Bounds objBounds, GameObject obj)
@@ -209,7 +215,7 @@ public class ReactiveCollisionPrevention
             //Vector3 locationToMove = new Vector3(locationToMove2D.x, obj.transform.position.y, locationToMove2D.y);
 
             //TODO: Add an additional SphereCastAll at this point and if colliding flag agent as "CANTMOVE"
-            if (!CheckForSecondaryCollision(locationToMove2D, radius, selfBounds, obj)) mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, bPrint);
+            // (!CheckForSecondaryCollision(locationToMove2D, radius, selfBounds, obj)) mapping.Move(locationToMove2D, obj.GetComponent<Agent>(), false, null, bPrint);
 
             //DEBUG: Print
             //Print(obj, radius, selfCenter, radius, otherCenter, locationToMove2D);
@@ -348,7 +354,7 @@ public class ReactiveCollisionPrevention
             Debug.DrawLine(new Vector3(circleIntercepts[1].x, -5, circleIntercepts[1].z), new Vector3(circleIntercepts[1].x, 5, circleIntercepts[1].z), Color.gray, 5);
         }
 
-        if (!CheckForSecondaryCollision(destination, radius, obj.GetComponent<Collider>().bounds, obj)) mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
+        /*if (!CheckForSecondaryCollision(destination, radius, obj.GetComponent<Collider>().bounds, obj)) mapping.Move(new Vector2(destination.x, destination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
         else if (!CheckForSecondaryCollision(altDestination, radius, obj.GetComponent<Collider>().bounds, obj))
         {
             mapping.Move(new Vector2(altDestination.x, altDestination.z), obj.GetComponent<Agent>(), true, obj.GetComponent<Agent>().GetPlanner(), false);
@@ -357,7 +363,7 @@ public class ReactiveCollisionPrevention
         else
         {
             UndoMove(mapping, obj);
-        }
+        }*/
         //Debug.Break();
     }
 }
