@@ -35,7 +35,7 @@ public class DynamicCoordinateGrid : MonoBehaviour
             Vector3 CollisionDir;
             if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this, out CollisionDir))
             {
-                if (planner != null) planner.CancelPath(true);
+                if (planner != null) planner.CancelPath(true, CollisionDir);
                 return;
             }
         }

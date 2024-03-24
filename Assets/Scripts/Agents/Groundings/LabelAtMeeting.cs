@@ -4,15 +4,23 @@ using UnityEngine;
 
 public class LabelAtMeeting : GroundingMethod
 {
-    // Start is called before the first frame update
-    void Start()
+    public override bool ExecuteGrounding(Agent owner)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        GameObject[] others = GameObject.FindGameObjectsWithTag("Agent");
+        foreach (GameObject other in others)
+        {
+            if (other == owner.gameObject) continue;
+            if (Vector2.Distance(owner.GetMapping().toVector2(other.transform.position), owner.GetMapping().toVector2(owner.transform.position)) <= owner.collisionDist && other.GetComponent<Agent>().CanGround())
+            {
+                for (int i = 0; i < owner.groundings.Count; i++)
+                {
+                    if (Vector2.Distance(owner.GetMapping().toVector2(owner.groundings[i].obj.transform.position), owner.GetMapping().toVector2(((other.transform.position - owner.transform.position) / 2) + owner.transform.position)) <= owner.GroundingUniqueDist) return false;
+                }
+                Grounding grounding = owner.master.CreateGrounding(((other.transform.position - owner.transform.position) / 2) + owner.transform.position);
+                other.GetComponent<Agent>().AddGrounding(owner.AddGrounding(grounding, 2));
+                return true;
+            }
+        }
+        return false;
     }
 }

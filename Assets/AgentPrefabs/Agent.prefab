@@ -95,6 +95,8 @@ GameObject:
   - component: {fileID: 5891298302622670680}
   - component: {fileID: 8092980767597770478}
   - component: {fileID: -4175849501445752044}
+  - component: {fileID: 2463896356712387134}
+  - component: {fileID: 3185820825708728026}
   m_Layer: 0
   m_Name: Agent
   m_TagString: Agent
@@ -130,10 +132,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba1d2422bdd6d774d8eb9c31e40c7e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  visionDist: 4
+  collisionDist: 1.5
   movementSpeed: 30
   AgentSize: 1
+  ArrivedAtGoal: 0
+  master: {fileID: 0}
   ShouldPrint: 0
+  GroundingDemonstrationCooldown: 10
   movementDirection: {x: 0, y: 0, z: 0}
+  bAwake: 0
 --- !u!114 &8092980767597770478
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,3 +172,27 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2463896356712387134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2504367276833023728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a8e09e008bc0b7469b383a252f2cc91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3185820825708728026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2504367276833023728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e831b9270aaa3d142ba4136bf75366bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

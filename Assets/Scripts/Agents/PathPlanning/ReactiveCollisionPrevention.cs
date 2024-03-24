@@ -66,6 +66,7 @@ public class ReactiveCollisionPrevention
         RaycastHit[] hits = Physics.SphereCastAll(new Vector3(newPos.x, newPos.y + 20, newPos.z), radius, Vector3.down, 20f);
         for (int i = 0; i < hits.Length; i++)
         {
+            if (hits[i].collider.gameObject == GameObject.FindGameObjectWithTag("Goal")) Debug.Log("WHOOPS GOAL IS COLLIDING");
             if (hits[i].collider.gameObject != owner)
             {
                 //DrawCircle(newPos, radius, 60, Color.red, 1);

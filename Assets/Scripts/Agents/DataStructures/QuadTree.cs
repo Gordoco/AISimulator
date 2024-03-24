@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public float MinSize = 1.5f;
+    public float MinSize = 1f;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -59,11 +59,18 @@ public class QuadTree
         }
         return currNearest;
     }
+    public List<NodeDepth> GetFurthestFreeNodeDepths(Vector2 location)
+    {
+        List<NodeDepth> children = root.GetFreeChildren();
+        children.Sort((a, b) => a.CompareTo(b, location));
+        return children;
+    }
+
 
     /**
-     * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
-     * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
-     */
+    * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
+    * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
+    */
     public List<QuadTreeNode> GetFurthestFreeNodes(Vector2 location)
     {
         /*List<NodeDepth> children = root.GetFreeChildren();
@@ -98,8 +105,13 @@ public class QuadTree
 
     public List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2 location, Vector2 dir) 
     {
-        List<QuadTreeNode> arr = GetFurthestFreeNodes(location);
-        if (arr == null || arr.Count <= 0) return null;
+        List<NodeDepth> arr = GetFurthestFreeNodeDepths(location);
+        arr.Sort((a, b) => a.CompareTo(b, location + dir));
+        arr.Reverse();
+        List<QuadTreeNode> nodes = new List<QuadTreeNode>();
+        foreach (NodeDepth depth in arr) nodes.Add(depth.node);
+        return nodes;
+        /*if (arr == null || arr.Count <= 0) return null;
         int x = -1;
         for (int i = arr.Count - 1; i >= 0; i--)
         {
@@ -117,7 +129,7 @@ public class QuadTree
             arr[x] = temp;
         }
 
-        return arr;
+        return arr;*/
     }
 
     /**
