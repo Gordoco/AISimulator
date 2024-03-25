@@ -7,16 +7,19 @@ using UnityEngine;
 */
 public class DynamicCoordinateGrid : MonoBehaviour
 {
+
     public int width;
     public int height;
 
     public Vector3 Origin = new Vector3(0, 0, 0);
     public int[] gridCorner = new int[2];
 
-    private Vector2 currentLocation = new Vector2(0, 0);
+    public Vector2 currentLocation = new Vector2(0, 0);
     private Vector2 localOrigin = new Vector2(0, 0);
     private List<List<int>> grid;
-    private Vector2 lastMappedPos = new Vector2();
+    public Vector2 lastMappedPos = new Vector2();
+
+    public bool bQuadTreeNeedsRegen = true;
 
     /**
      * #### void Move(Vector2, int[][])
@@ -24,21 +27,31 @@ public class DynamicCoordinateGrid : MonoBehaviour
      */
     //public void Move(Vector2 dir, int[][] localMap, float inverseMoveSpeed)
     //{
-    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false /* For implementing later */, PathPlanner planner = null)
+    public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false, PathPlanner planner = null, bool bCheckCollision = true, bool bPrint = false)
     {
+        if (bCheckCollision)
+        {
+            ReactiveCollisionPrevention CP = new ReactiveCollisionPrevention();
+            Vector3 CollisionDir;
+            if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this, out CollisionDir))
+            {
+                if (planner != null) planner.CancelPath(true, CollisionDir);
+                return;
+            }
+        }
+        //Debug.Log("BEFORE MOVE: " + oldLoc);
+
         if (bTeleport && planner == null)
         {
             Debug.Log("DCG_Move: ERROR Cannot teleport without specifying a planner");
             return;
         }
 
-        if (bTeleport) planner.CancelPath();
-
-        /*if (localMap.Length <= 0 || localMap[0].Length <= 0 || localMap.Length != localMap[0].Length)
+        if (bTeleport)
         {
-            Debug.Log("DCG_Move: Move Invalid");
-            return;
-        }*/
+            planner.CancelPath();
+        }
+
         int[] intVect = { -1 };
 
         int dirX = (int)Mathf.Round(newLoc.x - lastMappedPos.x);
@@ -49,6 +62,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (3 + GetConversionFactor().x == width)
                 {
+                    //Add row to the top
+                    grid.Insert(0, new List<int>());
+                    for (int i = 0; i < width; i++)
+                    {
+                        grid[0].Add((int)MappingIDs.Undefined);
+                    }
+                    localOrigin.y += 1;
+
                     //Add Column to the right
                     for (int i = 0; i < grid.Count; i++)
                     {
@@ -64,6 +85,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (GetConversionFactor().x == 0)
                 {
+                    //Add row to the bottom
+                    grid.Add(new List<int>());
+                    for (int i = 0; i < width; i++)
+                    {
+                        grid[grid.Count - 1].Add((int)MappingIDs.Undefined);
+                    }
+                    gridCorner[1] -= 1;
+
                     //Add Column to the left
                     for (int i = 0; i < grid.Count; i++)
                     {
@@ -101,6 +130,11 @@ public class DynamicCoordinateGrid : MonoBehaviour
                     }
                     localOrigin.y += 1;
 
+                    //Add Column to the right
+                    for (int i = 0; i < grid.Count; i++)
+                    {
+                        grid[i].Add((int)MappingIDs.Undefined);
+                    }
                 }
                 //Debug.Log("UP");
                 currentLocation.y -= 1;
@@ -111,7 +145,6 @@ public class DynamicCoordinateGrid : MonoBehaviour
             {
                 if (3 + GetConversionFactor().y == height)
                 {
-
                     //Add row to the bottom
                     grid.Add(new List<int>());
                     for (int i = 0; i < width; i++)
@@ -119,6 +152,14 @@ public class DynamicCoordinateGrid : MonoBehaviour
                         grid[grid.Count - 1].Add((int)MappingIDs.Undefined);
                     }
                     gridCorner[1] -= 1;
+
+                    //Add Column to the left
+                    for (int i = 0; i < grid.Count; i++)
+                    {
+                        grid[i].Insert(0, (int)MappingIDs.Undefined);
+                    }
+                    localOrigin.x += 1;
+                    gridCorner[0] -= 1;
                 }
                 //Debug.Log("DOWN");
                 currentLocation.y += 1;
@@ -133,17 +174,38 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 SetLocalValues(owner.ScanArea(intVect));
                 lastMappedPos = new Vector2(intVect[0], intVect[1]);
             }
+            //if (bPrint) Print();
         }
+
+        //Physically Move
         owner.gameObject.transform.position = toVector3(owner.gameObject.transform.position.y, newLoc);
-        if (bTeleport)
-        {
-            int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
-            intVect = temp2;
-            SetLocalValues(owner.ScanArea(intVect));
-            lastMappedPos = new Vector2(intVect[0], intVect[1]);
-        }
+        //Debug.Log("AFTER MOVE: " + owner.gameObject.transform.position);
+
+        int[] temp2 = { (int)Mathf.Round(toVector2(owner.gameObject.transform.position).x), (int)Mathf.Round(toVector2(owner.gameObject.transform.position).y) };
+        intVect = temp2;
+        SetLocalValues(owner.ScanArea(intVect));
+        lastMappedPos = new Vector2(intVect[0], intVect[1]);
         //DEBUG Unit Tests
-        //Print(inverseMoveSpeed);
+        //Print(0.05f);
+    }
+
+    bool bDraw = false;
+    Vector3 center;
+    float radius;
+    public void SetupGizmoDraw(Vector3 center, float radius)
+    {
+        bDraw = true;
+        this.center = center;
+        this.radius = radius;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (bDraw)
+        {
+            Gizmos.DrawSphere(center, radius);
+            bDraw = false;
+        }
     }
 
     /**
@@ -157,12 +219,79 @@ public class DynamicCoordinateGrid : MonoBehaviour
         {
             for (int j = 0; j < localMap[0].Length; j++)
             {
-                if ((MappingIDs)grid[i + (int)GetConversionFactor().y][j + (int)GetConversionFactor().x] == MappingIDs.Full &&
-                    (MappingIDs)localMap[i][j] == MappingIDs.Free) Debug.Log("MASSIVE ERROR WTF HOW IS THIS EVEN HAPPENING");
+                if ((MappingIDs)grid[i + (int)GetConversionFactor().y][j + (int)GetConversionFactor().x] != (MappingIDs)localMap[i][j])
+                {
+                    bQuadTreeNeedsRegen = true;
+                }
                 grid[i + (int)GetConversionFactor().y][j + (int)GetConversionFactor().x] = localMap[i][j];
             }
         }
     }
+
+    public float GetFreeRatio(int extent, int[][] vals)
+    {
+        //int[] vals = GetSquareArea(extent);
+        int A = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] != MappingIDs.Undefined) A++;
+            }
+        }
+        if (A == 0) return -1;
+        int f = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] == MappingIDs.Free) f++;
+            }
+        }
+        return (float)((float)f / (float)A);
+    }
+
+    public float GetBlockedRatio(int extent, int[][] vals)
+    {
+        //int[] vals = GetSquareArea(extent);
+        int A = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] != MappingIDs.Undefined) A++;
+            }
+        }
+        if (A == 0) return -1;
+        int f = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] == MappingIDs.Full) f++;
+            }
+        }
+        return (float)((float)f / (float)A);
+    }
+
+    /*private int[] GetSquareArea(int extent)
+    {
+        int width = (extent * 2) + 1;
+        int[] arr = new int[(int)Mathf.Pow(width, 2)];
+        for (int i = 0; i < arr.Length; i++) arr[i] = -1;
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                if (i + (int)GetConversionFactor().y >= 0 && i + (int)GetConversionFactor().y < grid.Count)
+                {
+                    if (j + (int)GetConversionFactor().x >= 0 && j + (int)GetConversionFactor().x < grid.Count)
+                        arr[(i + 1) * j] = grid[i + (int)GetConversionFactor().y][j + (int)GetConversionFactor().x];
+                }
+            }
+        }
+        return arr;
+    }*/
 
     public void Init(Agent owner)
     {
@@ -229,13 +358,13 @@ public class DynamicCoordinateGrid : MonoBehaviour
                 Color lineCol;
                 if ((MappingIDs)grid[i][j] == MappingIDs.Free) lineCol = Color.green;
                 else lineCol = Color.red;
-                /*Vector3 init = new Vector3(j + Origin.x + gridCorner[0], 5, grid.Count - i + Origin.z + gridCorner[1]);
-                Vector3 end = new Vector3(j + Origin.x + gridCorner[0], -5, grid.Count - i + Origin.z + gridCorner[1]);
-                Debug.DrawLine(init, end, lineCol, inverseMoveSpeed);*/
+                Vector3 init = new Vector3(j + Origin.x + gridCorner[0], 5, (grid.Count - 1) - i + Origin.z + gridCorner[1]);
+                Vector3 end = new Vector3(j + Origin.x + gridCorner[0], -5, (grid.Count - 1) - i + Origin.z + gridCorner[1]);
+                Debug.DrawLine(init, end, lineCol, inverseMoveSpeed);
             }
             toPrint += "\n";
         }
-        Debug.Log(toPrint);
+        /*Debug.Log(toPrint);
         Debug.Log("W: " + width + " || H: " + height);
         Debug.Log("X: " + currentLocation.x + " || Y: " + currentLocation.y);
         Debug.Log("ConvX: " + GetConversionFactor().x + " || ConvY: " + GetConversionFactor().y);
@@ -257,6 +386,6 @@ public class DynamicCoordinateGrid : MonoBehaviour
         {
             myNode.colorOverride = Color.black;
             myNode.Print(inverseMoveSpeed);
-        }
+        }*/
     }
 }
