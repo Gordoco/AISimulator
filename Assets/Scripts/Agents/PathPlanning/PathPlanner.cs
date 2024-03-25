@@ -8,6 +8,9 @@ using UnityEngine;
 public class PathPlanner
 {
     public bool OnPath = false;
+    public bool bCollisionReset = false;
+    public Vector3 collisionDir;
+
     public List<Vector2> currentPath;
     private Agent owner = null;
 
@@ -47,7 +50,7 @@ public class PathPlanner
         List<int> pathIndecies = GenericAStar(graph, time, 1, bPrint);
         if (pathIndecies == null)
         {
-            Debug.Log("ERROR: Invalid Input to AStar");
+            return new PathInfo(path, nodes);
         }
         for (int i = 0; i < pathIndecies.Count; i++)
         {
@@ -116,7 +119,7 @@ public class PathPlanner
             }
             closedList.Add(q);
         }
-
+        if (finalNode == null) return null;
         while (finalNode != null)
         {
             path.Insert(0, graph.GetVertexIndex(finalNode.value));
@@ -135,10 +138,14 @@ public class PathPlanner
         List<Vector2> arr = new List<Vector2>();
 
         GenericDigraph graph = GenerateGraphFromQuadTreePath(pathInfo);
-        if (bPrint) graph.Print(1, time);
+        if (bPrint)
+        {
+            //graph.Print(1, 5);
+            //Debug.Log(graph.GetNumVertices());
+        }
 
-        //Run A* on directed graph created above
-        List<int> vertexIndecies = GenericAStar(graph, time, 1, bPrint);
+            //Run A* on directed graph created above
+            List<int> vertexIndecies = GenericAStar(graph, time, 1, bPrint);
         for (int i = 0; i < vertexIndecies.Count; i++) arr.Add(graph.GetVertex(vertexIndecies[i]));
 
         //Do Visibility Checks to Simplify Path Geometry
@@ -181,6 +188,7 @@ public class PathPlanner
             for (int k = i1; k < (i2-i1) - 2; k++)
             {
                 //Debug.Log(originalPath.nodes.Count);
+                if (k < 0 || k >= originalPath.nodes.Count || k + 1 < 0 || k + 1 >= originalPath.nodes.Count) continue;
                 Vector2[] edge = GetEdgePoints(originalPath.nodes[k], originalPath.nodes[k+1]);
                 Vector2 intersection;
                 if (!Intersects(pathPoints[lastVisiblePoint], pathPoints[i], edge[0], edge[1], out intersection))
@@ -248,19 +256,35 @@ public class PathPlanner
         List<QuadTreeNode> children = new List<QuadTreeNode>();
         for (int i = 0; i < temp.Count; i++) if (temp[i].nodeType == NodeIDs.Free) children.Add(temp[i]);
         verts.Add(startLoc);
-        edges.Add(new DirectedEdge(0, children.IndexOf(tree.GetNode(startLoc)) + 1));
+        if (tree.GetNode(startLoc) == null) return new GenericDigraph();
+        List<QuadTreeNode> startAdjs = tree.GetNode(startLoc).GetDirections();
+        for (int i = 0; i < startAdjs.Count; i++)
+        {
+            if (startAdjs[i].nodeType == NodeIDs.Free)
+            {
+                edges.Add(new DirectedEdge(0, children.IndexOf(startAdjs[i]) + 1));
+            }
+        }
         for (int i = 0; i < children.Count; i++)
         {
             verts.Add(children[i].GetCenterPoint());
             List<QuadTreeNode> adjs = children[i].GetDirections();
             foreach (QuadTreeNode adj in adjs)
             {
-                edges.Add(new DirectedEdge(i + 1, children.IndexOf(adj) + 1));
+                if (children.Contains(adj))
+                {
+                    edges.Add(new DirectedEdge(i + 1, children.IndexOf(adj) + 1));
+                }
             }
         }
         verts.Add(endLoc);
-        edges.Add(new DirectedEdge(children.IndexOf(tree.GetNode(endLoc)) + 1, verts.Count - 1)); //Guarunteed to have 2 verts so this is safe
-        return new GenericDigraph(verts, edges);
+
+        QuadTreeNode endNode = tree.GetNode(endLoc);
+        if (endNode != null && endNode.nodeType == NodeIDs.Free) edges.Add(new DirectedEdge(children.IndexOf(endNode) + 1, verts.Count - 1)); //Guarunteed to have 2 verts so this is safe
+
+        GenericDigraph graph = new GenericDigraph(verts, edges);
+        //if (owner != null && owner.ShouldPrint) graph.Print(2, 2);
+        return graph;
     }
 
     /**
@@ -305,7 +329,10 @@ public class PathPlanner
             edges.Add(new DirectedEdge(verts.Count - 3, verts.Count - 1));
         }
         else edges.Add(new DirectedEdge(0, 1));
-        return new GenericDigraph(verts, edges);
+
+        GenericDigraph graph = new GenericDigraph(verts, edges);
+        //graph.Print(2, 5);
+        return graph;
     }
 
     /**
@@ -356,7 +383,6 @@ public class PathPlanner
     */
     public bool Move(QuadTree tree, Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f, bool bPrint = false)
     {
-        //Debug.Log("[DCG_Move] Trying To Move");
         PathInfo pathInfo = CheckForValidPath(tree, initialLocation, location, mapping, time, bPrint);
         if (pathInfo.path.Count != 0)
         {
@@ -368,9 +394,11 @@ public class PathPlanner
         return false;
     }
 
-    public void CancelPath()
+    public void CancelPath(bool bCollision = false, Vector3 collisionDir = new Vector3())
     {
         OnPath = false;
         currentPath = null;
+        bCollisionReset = bCollision;
+        this.collisionDir = collisionDir;
     }
 }

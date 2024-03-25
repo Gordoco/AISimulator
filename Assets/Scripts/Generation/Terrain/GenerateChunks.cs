@@ -112,7 +112,8 @@ public class GenerateChunks : MonoBehaviour
      * Initialization method for the TerrainSection array, creates the landscape
      */
     void initGenerateNewChunks() {
-        currentChunkCoords = getChunkCoords();
+        int[] arr = { 0, 0 };
+        currentChunkCoords = arr;//getChunkCoords();
 
         //Create Pool for terrain chunks
         GameObject newPool = Instantiate(poolObject, Vector3.zero, Quaternion.identity) as GameObject;

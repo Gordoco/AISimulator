@@ -7,7 +7,7 @@ using UnityEngine;
  */
 public class QuadTree
 {
-    public int MinSize = 1;
+    public float MinSize = 1f;
 
     private QuadTreeNode root;
     private Vector2 Origin;
@@ -59,11 +59,18 @@ public class QuadTree
         }
         return currNearest;
     }
+    public List<NodeDepth> GetFurthestFreeNodeDepths(Vector2 location)
+    {
+        List<NodeDepth> children = root.GetFreeChildren();
+        children.Sort((a, b) => a.CompareTo(b, location));
+        return children;
+    }
+
 
     /**
-     * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
-     * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
-     */
+    * #### QuadTreeNode GetFurthestFreeNodes(Vector2)
+    * Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
+    */
     public List<QuadTreeNode> GetFurthestFreeNodes(Vector2 location)
     {
         /*List<NodeDepth> children = root.GetFreeChildren();
@@ -74,25 +81,71 @@ public class QuadTree
 
         QuadTreeNode myNode = GetNode(location);
         if (myNode == null || myNode.nodeType != NodeIDs.Free) return null;
-        List<QuadTreeNode> finalArr = new List<QuadTreeNode>();
+        List<NodeDepth> finalArr = new List<NodeDepth>();
         List<QuadTreeNode> neighbors = myNode.GetDirections();
         while (neighbors.Count > 0)
         {
-            float furthest = 0;
             QuadTreeNode furthestNode = null;
+            Shuffle(neighbors);
             foreach (QuadTreeNode node in neighbors)
             {
-                if (!finalArr.Contains(node) && node.nodeType == NodeIDs.Free && Vector2.Distance(location, node.GetCenterPoint()) > furthest)
+                if (!finalArr.Contains(new NodeDepth(node, 0)) && node.nodeType == NodeIDs.Free)
                 {
-                    furthest = Vector2.Distance(location, node.GetCenterPoint());
                     furthestNode = node;
+                    break;
                 }
             }
             if (furthestNode == null) break;
-            finalArr.Add(furthestNode);
+            finalArr.Add(new NodeDepth(furthestNode, 0));
             neighbors = furthestNode.GetDirections();
         }
-        return finalArr;
+        finalArr.Remove(new NodeDepth(myNode, 0));
+        finalArr.Sort((a, b) => a.CompareTo(b, location));
+        List<QuadTreeNode> nodes = new List<QuadTreeNode>();
+        foreach (NodeDepth depth in finalArr) nodes.Add(depth.node);
+        return nodes;
+    }
+
+    public void Shuffle<T>(List<T> ts)
+    {
+        var count = ts.Count;
+        var last = count - 1;
+        for (var i = 0; i < last; ++i)
+        {
+            var r = Random.Range(i, count);
+            var tmp = ts[i];
+            ts[i] = ts[r];
+            ts[r] = tmp;
+        }
+    }
+
+    public List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2 location, Vector2 dir) 
+    {
+        List<NodeDepth> arr = GetFurthestFreeNodeDepths(location);
+        arr.Sort((a, b) => a.CompareTo(b, location + dir));
+        arr.Reverse();
+        List<QuadTreeNode> nodes = new List<QuadTreeNode>();
+        foreach (NodeDepth depth in arr) nodes.Add(depth.node);
+        return nodes;
+        /*if (arr == null || arr.Count <= 0) return null;
+        int x = -1;
+        for (int i = arr.Count - 1; i >= 0; i--)
+        {
+            if (Vector2.Dot((arr[i].GetCenterPoint() - location).normalized, -dir) > 0.5f)
+            {
+                x = i;
+                break;
+            }
+        }
+
+        if (x > -1 && x < arr.Count)
+        {
+            QuadTreeNode temp = arr[0];
+            arr[0] = arr[x];
+            arr[x] = temp;
+        }
+
+        return arr;*/
     }
 
     /**

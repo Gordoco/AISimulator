@@ -4,14 +4,13 @@ using UnityEngine;
 
 public class GroundingMethod : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    public virtual bool ExecuteGrounding(Agent owner)
     {
-        
+        return true;
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         
     }
