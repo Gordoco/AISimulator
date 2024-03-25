@@ -14,10 +14,10 @@ public class DynamicCoordinateGrid : MonoBehaviour
     public Vector3 Origin = new Vector3(0, 0, 0);
     public int[] gridCorner = new int[2];
 
-    private Vector2 currentLocation = new Vector2(0, 0);
+    public Vector2 currentLocation = new Vector2(0, 0);
     private Vector2 localOrigin = new Vector2(0, 0);
     private List<List<int>> grid;
-    private Vector2 lastMappedPos = new Vector2();
+    public Vector2 lastMappedPos = new Vector2();
 
     public bool bQuadTreeNeedsRegen = true;
 
@@ -29,11 +29,15 @@ public class DynamicCoordinateGrid : MonoBehaviour
     //{
     public void Move(Vector2 newLoc, Agent owner, bool bTeleport = false, PathPlanner planner = null, bool bCheckCollision = true, bool bPrint = false)
     {
-        ReactiveCollisionPrevention CP = new ReactiveCollisionPrevention();
-        if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this))
+        if (bCheckCollision)
         {
-            owner.GetPlanner().CancelPath();
-            return;
+            ReactiveCollisionPrevention CP = new ReactiveCollisionPrevention();
+            Vector3 CollisionDir;
+            if (!CP.CheckIfShouldMove(owner.gameObject, toVector3(owner.gameObject.transform.position.y, newLoc), this, out CollisionDir))
+            {
+                if (planner != null) planner.CancelPath(true, CollisionDir);
+                return;
+            }
         }
         //Debug.Log("BEFORE MOVE: " + oldLoc);
 
@@ -223,6 +227,71 @@ public class DynamicCoordinateGrid : MonoBehaviour
             }
         }
     }
+
+    public float GetFreeRatio(int extent, int[][] vals)
+    {
+        //int[] vals = GetSquareArea(extent);
+        int A = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] != MappingIDs.Undefined) A++;
+            }
+        }
+        if (A == 0) return -1;
+        int f = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] == MappingIDs.Free) f++;
+            }
+        }
+        return (float)((float)f / (float)A);
+    }
+
+    public float GetBlockedRatio(int extent, int[][] vals)
+    {
+        //int[] vals = GetSquareArea(extent);
+        int A = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] != MappingIDs.Undefined) A++;
+            }
+        }
+        if (A == 0) return -1;
+        int f = 0;
+        for (int i = 0; i < vals.Length; i++)
+        {
+            for (int j = 0; j < vals[0].Length; j++)
+            {
+                if (vals[i][j] != -1 && (MappingIDs)vals[i][j] == MappingIDs.Full) f++;
+            }
+        }
+        return (float)((float)f / (float)A);
+    }
+
+    /*private int[] GetSquareArea(int extent)
+    {
+        int width = (extent * 2) + 1;
+        int[] arr = new int[(int)Mathf.Pow(width, 2)];
+        for (int i = 0; i < arr.Length; i++) arr[i] = -1;
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                if (i + (int)GetConversionFactor().y >= 0 && i + (int)GetConversionFactor().y < grid.Count)
+                {
+                    if (j + (int)GetConversionFactor().x >= 0 && j + (int)GetConversionFactor().x < grid.Count)
+                        arr[(i + 1) * j] = grid[i + (int)GetConversionFactor().y][j + (int)GetConversionFactor().x];
+                }
+            }
+        }
+        return arr;
+    }*/
 
     public void Init(Agent owner)
     {

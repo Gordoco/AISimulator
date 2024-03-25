@@ -45,6 +45,12 @@ public class GenericDigraph
         E = edges;
     }
 
+    public GenericDigraph()
+    {
+        V = new List<Vector2>();
+        E = new List<DirectedEdge>();
+    }
+
     /**
     * #### List<int> GetNeighborIndecies(int)
     * Retrieve all neighbors from index input
