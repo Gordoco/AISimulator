@@ -13,6 +13,14 @@ public struct GroundingInfo
         this.ID = ID;
         localConsistency = 0;
     }
+
+    public int CompareTo(GroundingInfo other, Vector2 location)
+    {
+        if (other.obj == null) return 1;
+        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude > (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 0;
+        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude == (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 1;
+        else return -1;
+    }
 }
 
 /**
@@ -31,10 +39,11 @@ public class Agent : MonoBehaviour
 
     [SerializeField] public bool ShouldPrint = false;
     [SerializeField] private float GroundingDemonstrationCooldown = 0.5f;
-    [SerializeField] private float GroundingCreationCooldown = 1;
+    [SerializeField] private float GroundingCreationCooldown = 5f;
     [SerializeField] public float GroundingUniqueDist = 3;
 
     public List<GroundingInfo> groundings;
+    private List<Vector2> goalPathPoints = new List<Vector2>();
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
     private Vector2 initLocation; //TESTING
@@ -69,7 +78,7 @@ public class Agent : MonoBehaviour
         tolerance = radius;
         collisionDist = radius*2.1f;
 
-        Debug.Log("TEST");
+        Debug.Log("Agent Spawned");
     }
 
     public void ResetGroundingCreationCooldown()
@@ -82,7 +91,11 @@ public class Agent : MonoBehaviour
         int id = master.GetUniqueID();
         GroundingInfo info = new GroundingInfo(newGrounding, id);
         info.localConsistency = localConsistency;
-        if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + id + " Consistency: " + info.localConsistency);
+        for (int i = 0; i < groundings.Count; i++)
+        {
+            if (groundings[i].ID == info.ID || groundings[i].obj == info.obj) return new GroundingInfo();
+        }
+        //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + id + " Consistency: " + info.localConsistency);
         groundings.Add(info);
         groundingCreationCount = 0;
         return info;
@@ -91,7 +104,11 @@ public class Agent : MonoBehaviour
     public GroundingInfo AddGrounding(GroundingInfo grounding)
     {
         if (grounding.obj == null) Debug.Log("NULL1");
-        if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + grounding.ID + " Consistency: " + grounding.localConsistency);
+        //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + grounding.ID + " Consistency: " + grounding.localConsistency);
+        for (int i = 0; i < groundings.Count; i++)
+        {
+            if (groundings[i].ID == grounding.ID || groundings[i].obj == grounding.obj) return new GroundingInfo();
+        }
         groundings.Add(grounding);
         return grounding;
     }
@@ -108,6 +125,61 @@ public class Agent : MonoBehaviour
         return false;
     }
 
+    public void RecieveGoalBroadcast(GroundingInfo info)
+    {
+        //Sanitize Broadcast in Local Context
+        GroundingInfo knownGrounding = new GroundingInfo();
+        for (int i = 0; i < groundings.Count; i++)
+        {
+            if (groundings[i].ID == info.ID)
+            {
+                Debug.Log("Recieved and Understood Broadcast");
+                //planner.CancelPath();
+                //Attempt to path to the unserstood grounding reference
+                //planner.Move(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping);
+                knownGrounding = groundings[i];
+            }
+        }
+        if (knownGrounding.obj == null) return;
+        
+        //Check if path is possible given current information
+        if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), mapping.toVector2(knownGrounding.obj.transform.position), mapping).path.Count > 0)
+        {
+            //If Possible save path and ensure its eventual completion
+            goalPathPoints.Add(mapping.toVector2(knownGrounding.obj.transform.position));
+            planner.CancelPath();
+            planner.Move(tree, mapping.toVector2(transform.position), mapping.toVector2(knownGrounding.obj.transform.position), mapping);
+        }
+        //Upon path completion resume normal runtime
+    }
+
+    public void RecieveGoalBroadcast(GroundingTree info)
+    {
+        //Sanitize Broadcast in Local Context
+        for (int j = 0; j < info.vertexNames.Count; j++)
+        {
+            for (int i = 0; i < groundings.Count; i++)
+            {
+                if (groundings[i].ID == info.vertexNames[j])
+                {
+                    //planner.CancelPath();
+                    //Attempt to path to the unserstood grounding reference
+                    //planner.Move(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping);
+                    if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping).path.Count > 0)
+                    {
+                        goalPathPoints.Add(mapping.toVector2(groundings[i].obj.transform.position)); //Need to change to most efficent tree path
+                    }
+                }
+            }
+        }
+
+        //Check if path is possible given current information
+
+        //If Possible save path and ensure its eventual completion
+
+        //Upon path completion resume normal runtime
+    }
+
     public GroundingInfo RecieveDemonstration(GroundingInfo input)
     {
         //Debug.Log("Recieving a demonstration");
@@ -116,7 +188,7 @@ public class Agent : MonoBehaviour
         for (int i = 0; i < groundings.Count; i++)
         {
             GroundingInfo info = groundings[i];
-            if (Vector2.Distance(mapping.toVector2(info.obj.transform.position), mapping.toVector2(input.obj.transform.position)) <= GroundingUniqueDist) //Has a version of the same grounding
+            if (Vector2.Distance(mapping.toVector2(info.obj.transform.position), mapping.toVector2(input.obj.transform.position)) <= GroundingUniqueDist || info.obj == input.obj) //Has a version of the same grounding
             {
                 //Debug.Log("I know this grounding");
                 if (info.ID == input.ID && info.localConsistency == input.localConsistency)
@@ -127,17 +199,19 @@ public class Agent : MonoBehaviour
                 else if (info.localConsistency > input.localConsistency) //Local version is better than the shared version
                 {
                     info.localConsistency++;
+                    groundings[i] = info;
                     finalVersion = info;
                     //Debug.Log("I know a better grounding or simply have shared mine more");
                 }
                 else // Input is a better version of the grounding
                 {
                     //Debug.Log("Damn yours is way better high key");
-                    if (info.obj == null || input.obj == null) Debug.Log("NULL2");
-                    if (ShouldPrint) Debug.Log("Updated a given grounding: Name: " + input.ID + " Consistency: " + input.localConsistency);
+                    //if (info.obj == null || input.obj == null) Debug.Log("NULL2");
+                    //if (ShouldPrint) Debug.Log("Updated a given grounding: Name: " + input.ID + " Consistency: " + input.localConsistency);
                     info.ID = input.ID;
                     info.obj = input.obj;
-                    info.localConsistency = input.localConsistency;
+                    info.localConsistency = input.localConsistency + 1;
+                    groundings[i] = info;
                     finalVersion = input;
                 }
                 bFound = true;
@@ -147,9 +221,10 @@ public class Agent : MonoBehaviour
         if (!bFound) //Doesn't know anything about this grounding
         {
             //Debug.Log("Never seen this grounding before in my entire life gawddamn");
+            input.localConsistency++;
             AddGrounding(input);
             finalVersion = input;
-            if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + finalVersion.ID + " Consistency: " + finalVersion.localConsistency);
+            //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + finalVersion.ID + " Consistency: " + finalVersion.localConsistency);
         }
         groundingDemonstrationCount = 0;
         //Debug.Log("\n\n\n\n\n");
@@ -248,9 +323,9 @@ public class Agent : MonoBehaviour
 
             ArrivedAtGoal = true;
             bAwake = false;
-            mapping.Move(new Vector3(0, 4, 0), this, true, planner, false, false);
+            GetComponent<BroadcastGoal>().Broadcast(groundings);
+            transform.position = new Vector3(transform.position.x, 9999, transform.position.z);
             //BROADCAST
-            GetComponent<BroadcastGoal>().Broadcast();
         }
         else if (groundingCreationCount > GroundingCreationCooldown && GetComponent<GroundingMethod>().ExecuteGrounding(this))
         {
@@ -281,43 +356,49 @@ public class Agent : MonoBehaviour
             RaycastHit[] hits = Physics.SphereCastAll(transform.position, visionDist, Vector3.down, 0);
             if (hits.Length > 1)
             {
-                GameObject otherAgent = null;
-                GroundingInfo knownGrounding = new GroundingInfo(null, 0);
+                GroundingInfo knownGrounding;
+                List<GameObject> otherAgents = new List<GameObject>();
                 for (int i = 0; i < hits.Length; i++)
                 {
                     if (hits[i].collider.gameObject.GetComponent<Agent>() && hits[i].collider.gameObject != gameObject)
                     {
-                        otherAgent = hits[i].collider.gameObject;
-                        break;
+                        otherAgents.Add(hits[i].collider.gameObject);
                     }
                 }
-                for (int i = 0; i < groundings.Count; i++)
+                for (int j = 0; j < otherAgents.Count; j++)
                 {
-                    if (Vector2.Distance(mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.gameObject.transform.position)) <= visionDist)
+                    if (groundingDemonstrationCount == 0) break;
+                    GameObject otherAgent = otherAgents[j];
+                    for (int i = 0; i < groundings.Count; i++)
                     {
-                        knownGrounding = groundings[i];
-                    }
-                }
-                if (otherAgent != null && knownGrounding.obj != null)
-                {
-                    Agent other = otherAgent.GetComponent<Agent>();
-                    if (other.RequestRecieveDemonstration())
-                    {
-                        ResetGroundingCreationCooldown();
-                        other.ResetGroundingCreationCooldown();
-                        //Debug.Log("DEMONSTRATING AND ACCEPTED");
-                        knownGrounding.localConsistency++;
-                        GroundingInfo otherResponse = other.RecieveDemonstration(knownGrounding);
-                        if (otherResponse.ID != knownGrounding.ID && otherResponse.obj != null)
+                        if (groundingDemonstrationCount == 0) break;
+                        if (Vector2.Distance(mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.gameObject.transform.position)) <= visionDist)
                         {
-                            knownGrounding.ID = otherResponse.ID;
-                            knownGrounding.obj = otherResponse.obj;
-                            knownGrounding.localConsistency = otherResponse.localConsistency;
-                            //if (knownGrounding.obj == null) Debug.Log("NULL8");
-                            if (ShouldPrint) Debug.Log("Updated a responded grounding: Name: " + knownGrounding.ID + " Consistency: " + knownGrounding.localConsistency);
+                            knownGrounding = groundings[i];
+                            if (otherAgent != null && knownGrounding.obj != null)
+                            {
+                                Agent other = otherAgent.GetComponent<Agent>();
+                                if (other.RequestRecieveDemonstration())
+                                {
+                                    GroundingInfo otherResponse = other.RecieveDemonstration(knownGrounding);
+                                    if (otherResponse.ID != knownGrounding.ID && otherResponse.obj != null)
+                                    {
+                                        knownGrounding.ID = otherResponse.ID;
+                                        knownGrounding.obj = otherResponse.obj;
+                                        knownGrounding.localConsistency = otherResponse.localConsistency;
+                                        //if (knownGrounding.obj == null) Debug.Log("NULL8");
+                                        //if (ShouldPrint) Debug.Log("Updated a responded grounding: Name: " + knownGrounding.ID + " Consistency: " + knownGrounding.localConsistency);
+                                    }
+                                    else if (otherResponse.obj != null)
+                                    {
+                                        knownGrounding.localConsistency++;
+                                    }
+                                    //Release both to return to their tasks
+                                    groundingDemonstrationCount = 0;
+                                }
+                            }
+                            groundings[i] = knownGrounding;
                         }
-                        //Release both to return to their tasks
-                        groundingDemonstrationCount = 0;
                     }
                 }
             }
@@ -379,7 +460,7 @@ public class Agent : MonoBehaviour
         if (!planner.bCollisionReset || planner.collisionDir == Vector3.zero) nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
         else
         {
-            nodes = tree.GetFurthestFreeNodesInDir(new Vector2(transform.position.x, transform.position.z), new Vector2(planner.collisionDir.x, planner.collisionDir.z));
+            nodes = tree.GetFurthestFreeNodes(new Vector2(transform.position.x, transform.position.z));
             //temp = -planner.collisionDir;
             //Debug.DrawLine(transform.position, transform.position + temp, Color.magenta, 20);
         }
@@ -503,6 +584,15 @@ public class Agent : MonoBehaviour
             planner.currentPath = null;
             movementDirection = Vector3.zero;
             count = 1;
+            if (goalPathPoints.Count > 0)
+            {
+                if (transform.position.x < goalPathPoints[0].x + tolerance && transform.position.x > goalPathPoints[0].x - tolerance &&
+            transform.position.z < goalPathPoints[0].y + tolerance && transform.position.z > goalPathPoints[0].y - tolerance)
+                {
+                    goalPathPoints.RemoveAt(0);
+                    if (goalPathPoints.Count > 0) planner.Move(tree, mapping.toVector2(transform.position), goalPathPoints[0], mapping, 2, true);
+                }
+            }
         }
         else if (transform.position.x < planner.currentPath[progress].x + tolerance && transform.position.x > planner.currentPath[progress].x - tolerance &&
             transform.position.z < planner.currentPath[progress].y + tolerance && transform.position.z > planner.currentPath[progress].y - tolerance)

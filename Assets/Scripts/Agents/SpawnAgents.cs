@@ -18,6 +18,8 @@ public class SpawnAgents : MonoBehaviour
     [SerializeField] private int NUM_ITERATIONS = 200;
     [SerializeField] private float SIM_TIMESCALE = 2.0f;
 
+    public int iterationNum = 1;
+    public int agentViewingNum = 0;
     private List<GameObject> agents = new List<GameObject>();
     private GameObject Goal;
     private List<Grounding> globalGroundings = new List<Grounding>();
@@ -56,6 +58,7 @@ public class SpawnAgents : MonoBehaviour
         while (usedIDs.Contains(ID))
         {
             ID = Random.Range(0, 999999);
+            usedIDs.Add(ID);
         }
         return ID;
     }
@@ -76,7 +79,10 @@ public class SpawnAgents : MonoBehaviour
                 GameObject agent = Instantiate(AgentType, locationToSpawn, Quaternion.identity);
                 agent.GetComponent<Agent>().Init();
                 agent.GetComponent<Agent>().master = this;
-                if (i == 0) agent.GetComponent<Agent>().ShouldPrint = true;
+                if (i == 0)
+                {
+                    agent.GetComponent<Agent>().ShouldPrint = true;
+                }
                 agents.Add(agent);
             }
         }
@@ -93,6 +99,40 @@ public class SpawnAgents : MonoBehaviour
 
     float count = 0;
     int iCount = 0;
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            if (agentViewingNum > 0)
+            {
+                agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = false;
+                agentViewingNum--;
+                agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = true;
+            }
+            else
+            {
+                agentViewingNum = -1;
+                agents[0].GetComponent<Agent>().ShouldPrint = false;
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (agentViewingNum < NumberOfAgents - 1 && agentViewingNum >= 0)
+            {
+                agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = false;
+                agentViewingNum++;
+                agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = true;
+            }
+            else if (agentViewingNum == -1)
+            {
+                agentViewingNum = 0;
+                agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = true;
+            }
+        }
+    }
+
     // Update is called once per frame
     void FixedUpdate()
     {
@@ -105,7 +145,8 @@ public class SpawnAgents : MonoBehaviour
         if (count >= AGENT_SLEEP_INTERVAL)
         {
             Debug.Break();
-            Debug.Log("PORTED");
+            iterationNum++;
+            Debug.Log("Iteration Finished");
             for (int i = 0; i < NumberOfAgents; i++)
             {
                 agents[i].GetComponent<Agent>().GetPlanner().CancelPath();
@@ -139,14 +180,19 @@ public class SpawnAgents : MonoBehaviour
         }
     }
 
+    public bool CheckAgentFinished(int index)
+    {
+        return agents[index].GetComponent<Agent>().ArrivedAtGoal;
+    }
+
     void Debug_UpdateGroundings()
     {
         List<Grounding> emptyGroundings = new List<Grounding>();
         for (int i = 0; i < globalGroundings.Count; i++)
         {
-            List<int> diffNames = new List<int>();
-            List<int> diffNameCount = new List<int>();
+            globalGroundings[i].gameObject.SetActive(false);
             int count = 0;
+            string text = "";
             for (int j = 0; j < NumberOfAgents; j++)
             {
                 bool bFoundGrounding = false;
@@ -154,22 +200,33 @@ public class SpawnAgents : MonoBehaviour
                 {
                     if (agents[j].GetComponent<Agent>().groundings[k].obj == globalGroundings[i])
                     {
-                        if (bFoundGrounding) Debug.Log("THIS IS BAD: MULTIPLE OF THE SAME GROUNDING IN 1 AGENT");
+                        if (bFoundGrounding)
+                        {
+                            Debug.Log("THIS IS BAD: MULTIPLE OF THE SAME GROUNDING IN 1 AGENT");
+                            for (int w = 0; w < agents[j].GetComponent<Agent>().groundings.Count; w++) Debug.Log("GROUNDING NAME: " + agents[j].GetComponent<Agent>().groundings[w].ID);
+                        }
+                        if (j == agentViewingNum)
+                        {
+                            globalGroundings[i].gameObject.SetActive(true);
+                            text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
+                        }
                         count++;
                         bFoundGrounding = true;
                     }
                 }
             }
-            string text = "" + count;
+            if (agentViewingNum == -1) text = "" + count;
 
             if (count == 0) emptyGroundings.Add(globalGroundings[i]);
 
             globalGroundings[i].GetComponentInChildren<TextMesh>().text = text;
+            if (agentViewingNum == -1) globalGroundings[i].gameObject.SetActive(true);
         }
         if (emptyGroundings.Count > 0)
         {
             foreach (Grounding empty in emptyGroundings)
             {
+                Debug.Log("GROUNDING REMOVED/REPLACED");
                 globalGroundings.Remove(empty);
                 Destroy(empty.gameObject);
             }

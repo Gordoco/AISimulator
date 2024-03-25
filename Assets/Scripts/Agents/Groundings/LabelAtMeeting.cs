@@ -17,7 +17,8 @@ public class LabelAtMeeting : GroundingMethod
                     if (Vector2.Distance(owner.GetMapping().toVector2(owner.groundings[i].obj.transform.position), owner.GetMapping().toVector2(((other.transform.position - owner.transform.position) / 2) + owner.transform.position)) <= owner.GroundingUniqueDist) return false;
                 }
                 Grounding grounding = owner.master.CreateGrounding(((other.transform.position - owner.transform.position) / 2) + owner.transform.position);
-                other.GetComponent<Agent>().AddGrounding(owner.AddGrounding(grounding, 2));
+                GroundingInfo ownerGrounding = owner.AddGrounding(grounding, 2);
+                if (ownerGrounding.obj != null) other.GetComponent<Agent>().AddGrounding(ownerGrounding);
                 return true;
             }
         }
