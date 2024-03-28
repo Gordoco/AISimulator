@@ -6,11 +6,13 @@ public struct GroundingTree
 {
     public GenericDigraph tree;
     public List<int> vertexNames;
+    public Vector2 goalLoc;
 
-    public GroundingTree(GenericDigraph tree, List<int> vertexNames)
+    public GroundingTree(GenericDigraph tree, List<int> vertexNames, Vector2 goalLoc)
     {
         this.tree = tree;
         this.vertexNames = vertexNames;
+        this.goalLoc = goalLoc;
     }
 }
 
@@ -18,7 +20,6 @@ public class Waypoint : BroadcastGoal
 {
     public override void Broadcast(List<GroundingInfo> groundings)
     {
-        Debug.Log(groundings.Count);
         base.Broadcast(groundings);
         groundings.Sort((a, b) => a.CompareTo(b, new Vector2(transform.position.x, transform.position.z)));
         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
@@ -64,8 +65,8 @@ public class Waypoint : BroadcastGoal
             }
 
             GenericDigraph graph = new GenericDigraph(V, E);
-            agents[i].GetComponent<Agent>().RecieveGoalBroadcast(new GroundingTree(graph, IDs));
-            graph.Print(2, 10);
+            agents[i].GetComponent<Agent>().RecieveGoalBroadcast(new GroundingTree(graph, IDs, mapping.toVector2(transform.position)));
+            //graph.Print(1, 10);
 
         }
     }

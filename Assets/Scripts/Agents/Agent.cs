@@ -7,18 +7,19 @@ public struct GroundingInfo
     public int ID;
     public Grounding obj;
     public int localConsistency;
-    public GroundingInfo(Grounding obj, int ID)
+
+    public GroundingInfo(Grounding obj, int ID, int localConsistency = 0)
     {
         this.obj = obj;
         this.ID = ID;
-        localConsistency = 0;
+        this.localConsistency = localConsistency;
     }
 
     public int CompareTo(GroundingInfo other, Vector2 location)
     {
-        if (other.obj == null) return 1;
-        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude > (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 0;
-        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude == (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 1;
+        if (other.obj == null) return 0;
+        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude > (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 1;
+        if ((new Vector2(obj.transform.position.x, obj.transform.position.z) - location).magnitude == (new Vector2(other.obj.transform.position.x, other.obj.transform.position.z) - location).magnitude) return 0;
         else return -1;
     }
 }
@@ -46,8 +47,6 @@ public class Agent : MonoBehaviour
     private List<Vector2> goalPathPoints = new List<Vector2>();
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
-    private Vector2 initLocation; //TESTING
-    private Vector3 currLocation;
     public Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
@@ -69,8 +68,6 @@ public class Agent : MonoBehaviour
         mapping = GetComponent<DynamicCoordinateGrid>();
         mapping.Origin = GetComponent<Collider>().bounds.center;
         mapping.Init(this);
-        initLocation = new Vector2(transform.position.x, transform.position.z);
-        currLocation = transform.position;
         bAwake = true;
 
         Bounds bounds = GetComponent<Collider>().bounds;
@@ -95,7 +92,7 @@ public class Agent : MonoBehaviour
         {
             if (groundings[i].ID == info.ID || groundings[i].obj == info.obj) return new GroundingInfo();
         }
-        //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + id + " Consistency: " + info.localConsistency);
+        //Debug.Log("Recieved a grounding: Name: " + id + " Consistency: " + info.localConsistency);
         groundings.Add(info);
         groundingCreationCount = 0;
         return info;
@@ -104,12 +101,13 @@ public class Agent : MonoBehaviour
     public GroundingInfo AddGrounding(GroundingInfo grounding)
     {
         if (grounding.obj == null) Debug.Log("NULL1");
-        //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + grounding.ID + " Consistency: " + grounding.localConsistency);
+        //Debug.Log("Recieved a grounding: Name: " + grounding.ID + " Consistency: " + grounding.localConsistency);
         for (int i = 0; i < groundings.Count; i++)
         {
             if (groundings[i].ID == grounding.ID || groundings[i].obj == grounding.obj) return new GroundingInfo();
         }
         groundings.Add(grounding);
+        groundingCreationCount = 0;
         return grounding;
     }
 
@@ -133,7 +131,7 @@ public class Agent : MonoBehaviour
         {
             if (groundings[i].ID == info.ID)
             {
-                Debug.Log("Recieved and Understood Broadcast");
+                if (!ArrivedAtGoal) Debug.Log("Recieved and Understood Broadcast");
                 //planner.CancelPath();
                 //Attempt to path to the unserstood grounding reference
                 //planner.Move(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping);
@@ -155,29 +153,147 @@ public class Agent : MonoBehaviour
 
     public void RecieveGoalBroadcast(GroundingTree info)
     {
+        if (info.tree.GetNumVertices() <= 0) return;
+        if (ArrivedAtGoal) return;
+
         //Sanitize Broadcast in Local Context
-        for (int j = 0; j < info.vertexNames.Count; j++)
+        List<Vector2> V = new List<Vector2>();
+        List<DirectedEdge> E = new List<DirectedEdge>();
+        int currDepth = 0;
+        int currVert = 0;
+
+        int prevVert = -1;
+
+        int rootVert = -1;
+        int rootDepth = 999999;
+
+        List<int> backVerts = new List<int>();
+        List<int> backDepths = new List<int>();
+        List<List<int>> backNeighbors = new List<List<int>>();
+
+        List<int> backPrevVerts = new List<int>();
+
+        int numNodesVisited = 1;
+
+        //Traverse tree until all nodes are visited
+        while (numNodesVisited < info.tree.GetNumVertices())
         {
             for (int i = 0; i < groundings.Count; i++)
             {
-                if (groundings[i].ID == info.vertexNames[j])
+                if (info.vertexNames[currVert] == groundings[i].ID)
                 {
-                    //planner.CancelPath();
-                    //Attempt to path to the unserstood grounding reference
-                    //planner.Move(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping);
-                    if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), mapping.toVector2(groundings[i].obj.transform.position), mapping).path.Count > 0)
+                    //Assign a new root if a lower depth match is found
+                    if (currDepth < rootDepth) { rootVert = currVert; rootDepth = currDepth; prevVert = rootVert; }
+                    else if (prevVert != -1)
                     {
-                        goalPathPoints.Add(mapping.toVector2(groundings[i].obj.transform.position)); //Need to change to most efficent tree path
+                        //Add an edge to last node in branch
+                        E.Add(new DirectedEdge(currVert, prevVert));
+                        prevVert = currVert;
                     }
+                    V.Add(info.tree.GetVertex(currVert)); //Add vertex to new tree
                 }
             }
+
+            //Check number of edges from current node
+            List<int> next = new List<int>();
+            for (int j = 0; j < info.tree.GetNumEdges(); j++)
+            {
+                if (info.tree.GetEdge(j).endIndex == currVert)
+                {
+                    next.Add(info.tree.GetEdge(j).startIndex);
+                }
+            }
+            //---------------------------------------
+
+            //DONE, Do a backtracking jump if needed
+            if (next.Count == 0)
+            {
+                if (backPrevVerts.Count > 0)
+                {
+                    //BACKTRACK
+                    prevVert = backPrevVerts[0];
+                    currVert = backNeighbors[0][0];
+                    currDepth = backDepths[0];
+                    backVerts.RemoveAt(0);
+                    backNeighbors[0].RemoveAt(0);
+                    if (backNeighbors[0].Count == 0)
+                    {
+                        backNeighbors.RemoveAt(0);
+                        backPrevVerts.RemoveAt(0);
+                    }
+                    backDepths.RemoveAt(0);
+                }
+            }
+            //Only 1 edge, continue on logically
+            else if (next.Count == 1)
+            {
+                currVert = next[0];
+                currDepth++;
+            }
+            //Multiple edges, save a backtrack point and proceed with the first edge
+            else
+            {
+                backVerts.Add(currVert);
+                backDepths.Add(currDepth);
+                currDepth++;
+                if (backPrevVerts.Count > 0) if (backPrevVerts[0] != prevVert) backPrevVerts.Add(prevVert);
+                else backPrevVerts.Add(prevVert);
+                prevVert = currVert;
+                currVert = next[0];
+                next.RemoveAt(0);
+                backNeighbors.Add(new List<int>());
+                backNeighbors[backNeighbors.Count - 1].AddRange(next);
+            }
+            numNodesVisited++;
+        }
+        
+        if (E.Count > 0)
+        {
+            //Move All Edges up an index
+            for (int i = 0; i < E.Count; i++)
+            {
+                E[i] = new DirectedEdge(E[i].startIndex + 1, E[i].endIndex + 1);
+            }
+
+            //Add goal location as root with edge to old root
+            V.Insert(0, info.goalLoc);
+            E.Add(new DirectedEdge(0, 1));
         }
 
+        GenericDigraph sanitizedGraph = new GenericDigraph(V, E);
+        if (sanitizedGraph.GetNumVertices() == 0) return;
+        if (ShouldPrint) sanitizedGraph.Print(2, 10);
+
         //Check if path is possible given current information
+        float currClosest = Mathf.Infinity;
+        int index = -1;
+        for (int i = sanitizedGraph.GetNumVertices() - 1; i >= 0; i--)
+        {
+            float dist = Vector2.Distance(sanitizedGraph.GetVertex(i), mapping.toVector2(transform.position));
+            if (dist < currClosest)
+            {
+                currClosest = dist;
+                index = i;
+            } 
+        }
 
-        //If Possible save path and ensure its eventual completion
-
-        //Upon path completion resume normal runtime
+        if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(index), mapping).path.Count > 0)
+        {
+            goalPathPoints.Add(sanitizedGraph.GetVertex(index));
+        }
+        else return;
+        for (int i = index; i < sanitizedGraph.GetNumVertices(); i++)
+        {
+            int nextNode = -1;
+            for (int j = 0; j < sanitizedGraph.GetNumEdges(); j++) { if (sanitizedGraph.GetEdge(j).startIndex == index) { nextNode = sanitizedGraph.GetEdge(j).endIndex; break; } }
+            if (nextNode == -1) break;
+            if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(nextNode), mapping).path.Count > 0)
+            {
+                goalPathPoints.Add(sanitizedGraph.GetVertex(nextNode));
+                index = nextNode;
+            }
+            else break;
+        }
     }
 
     public GroundingInfo RecieveDemonstration(GroundingInfo input)
@@ -199,8 +315,8 @@ public class Agent : MonoBehaviour
                 else if (info.localConsistency > input.localConsistency) //Local version is better than the shared version
                 {
                     info.localConsistency++;
-                    groundings[i] = info;
-                    finalVersion = info;
+                    groundings[i] = new GroundingInfo(info.obj, info.ID, info.localConsistency); ;
+                    finalVersion = new GroundingInfo(info.obj, info.ID, info.localConsistency); ;
                     //Debug.Log("I know a better grounding or simply have shared mine more");
                 }
                 else // Input is a better version of the grounding
@@ -211,8 +327,8 @@ public class Agent : MonoBehaviour
                     info.ID = input.ID;
                     info.obj = input.obj;
                     info.localConsistency = input.localConsistency + 1;
-                    groundings[i] = info;
-                    finalVersion = input;
+                    groundings[i] = new GroundingInfo(info.obj, info.ID, info.localConsistency);
+                    finalVersion = new GroundingInfo(input.obj, input.ID, input.localConsistency);
                 }
                 bFound = true;
                 break;
@@ -223,8 +339,8 @@ public class Agent : MonoBehaviour
             //Debug.Log("Never seen this grounding before in my entire life gawddamn");
             input.localConsistency++;
             AddGrounding(input);
-            finalVersion = input;
-            //if (ShouldPrint) Debug.Log("Recieved a grounding: Name: " + finalVersion.ID + " Consistency: " + finalVersion.localConsistency);
+            finalVersion = new GroundingInfo(input.obj, input.ID, input.localConsistency); ;
+            //Debug.Log("Recieved a grounding: Name: " + finalVersion.ID + " Consistency: " + finalVersion.localConsistency);
         }
         groundingDemonstrationCount = 0;
         //Debug.Log("\n\n\n\n\n");
@@ -408,9 +524,6 @@ public class Agent : MonoBehaviour
         //Vector3 test1 = transform.position;
         mapping.Move(mapping.toVector2(gameObject.transform.position + (movementDirection.normalized * Time.fixedDeltaTime * movementSpeed)), this, false, planner, true, ShouldPrint);
         //if (planner.bCollisionReset && transform.position != test1) Debug.Log("COLLISION BUT WE STILL MOVED");
-
-        //Save previous frames location for use calculating position deltas
-        currLocation = transform.position;
     }
 
     public void Teleported()

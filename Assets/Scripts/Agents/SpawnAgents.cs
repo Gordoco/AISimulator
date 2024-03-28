@@ -51,6 +51,16 @@ public class SpawnAgents : MonoBehaviour
         return newGrounding;
     }
 
+    public void RemoveGrounding(GroundingInfo grounding)
+    {
+        if (globalGroundings.Contains(grounding.obj))
+        {
+            globalGroundings.Remove(grounding.obj);
+            usedIDs.Remove(grounding.ID);
+            Destroy(grounding.obj);
+        }
+    }
+
     List<int> usedIDs = new List<int>();
     public int GetUniqueID()
     {
@@ -131,6 +141,15 @@ public class SpawnAgents : MonoBehaviour
                 agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = true;
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            if (Time.timeScale > 1) Time.timeScale -= 1;
+        }
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            Time.timeScale += 1;
+        }
     }
 
     // Update is called once per frame
@@ -144,7 +163,7 @@ public class SpawnAgents : MonoBehaviour
         count += Time.fixedDeltaTime;
         if (count >= AGENT_SLEEP_INTERVAL)
         {
-            Debug.Break();
+            //Debug.Break();
             iterationNum++;
             Debug.Log("Iteration Finished");
             for (int i = 0; i < NumberOfAgents; i++)
@@ -196,24 +215,30 @@ public class SpawnAgents : MonoBehaviour
             for (int j = 0; j < NumberOfAgents; j++)
             {
                 bool bFoundGrounding = false;
+                bool bBad = false;
+                GroundingInfo DEBUG_GI = new GroundingInfo();
                 for (int k = 0; k < agents[j].GetComponent<Agent>().groundings.Count; k++)
                 {
                     if (agents[j].GetComponent<Agent>().groundings[k].obj == globalGroundings[i])
                     {
                         if (bFoundGrounding)
                         {
-                            Debug.Log("THIS IS BAD: MULTIPLE OF THE SAME GROUNDING IN 1 AGENT");
-                            for (int w = 0; w < agents[j].GetComponent<Agent>().groundings.Count; w++) Debug.Log("GROUNDING NAME: " + agents[j].GetComponent<Agent>().groundings[w].ID);
+                            bBad = true;
                         }
-                        if (j == agentViewingNum)
+                        else
                         {
-                            globalGroundings[i].gameObject.SetActive(true);
-                            text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
+                            if (j == agentViewingNum)
+                            {
+                                globalGroundings[i].gameObject.SetActive(true);
+                                text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
+                            }
+                            count++;
+                            bFoundGrounding = true;
+                            DEBUG_GI = agents[j].GetComponent<Agent>().groundings[k];
                         }
-                        count++;
-                        bFoundGrounding = true;
                     }
                 }
+                if (bBad) agents[j].GetComponent<Agent>().groundings.Remove(DEBUG_GI);
             }
             if (agentViewingNum == -1) text = "" + count;
 

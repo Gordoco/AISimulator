@@ -112,6 +112,60 @@ public class QuadTreeNode
     public List<QuadTreeNode> GetDirections()
     {
         List<QuadTreeNode> arr = new List<QuadTreeNode>();
+        Vector2 corner;
+        QuadTreeNode firstNode;
+        float sum;
+
+        //LEFT
+        sum = y + h - 0.1f;
+        corner = new Vector2(x + 0.1f, sum);
+        firstNode = tree.GetNode(new Vector2(x - 0.1f, y + h - 0.1f));
+        while (firstNode != null && sum > y)
+        {
+            arr.Add(firstNode);
+            sum = sum - firstNode.h;
+            firstNode = tree.GetNode(new Vector2(x - 0.2f, sum));
+        }
+
+        //RIGHT
+        sum = y + h - 0.1f;
+        corner = new Vector2(x + w - 0.1f, sum);
+        firstNode = tree.GetNode(corner + new Vector2(0.2f, 0));
+        while (firstNode != null && sum > y)
+        {
+            arr.Add(firstNode);
+            sum = sum - firstNode.h;
+            firstNode = tree.GetNode(new Vector2(x + w + 0.1f, sum));
+        }
+
+        //UP
+        sum = x + 0.1f;
+        corner = new Vector2(sum, y + h - 0.1f);
+        firstNode = tree.GetNode(corner + new Vector2(0, 0.2f));
+        while (firstNode != null && sum < x + w)
+        {
+            arr.Add(firstNode);
+            sum = sum + firstNode.w;
+            firstNode = tree.GetNode(new Vector2(sum, y + h + 0.1f));
+        }
+
+        //DOWN
+        sum = x + 0.1f;
+        corner = new Vector2(sum, y + 0.1f);
+        firstNode = tree.GetNode(corner - new Vector2(0, 0.2f));
+        while (firstNode != null && sum < x + w)
+        {
+            arr.Add(firstNode);
+            sum = sum + firstNode.w;
+            firstNode = tree.GetNode(new Vector2(sum, y - 0.1f));
+        }
+
+        return arr;
+    }
+
+    /*public List<QuadTreeNode> GetDirections()
+    {
+        List<QuadTreeNode> arr = new List<QuadTreeNode>();
         NodeDepth largestRight = GetRight();
         if (largestRight.node == null) largestRight = new NodeDepth();
         else if (largestRight.node.NodeIsLeaf()) arr.Add(largestRight.node);
@@ -145,9 +199,9 @@ public class QuadTreeNode
         }
         
         return arr;
-    }
+    }*/
 
-    private List<QuadTreeNode> GetSidedChildren(QuadTreeNode node, NodeDepth otherNode, Side side)
+    /*private List<QuadTreeNode> GetSidedChildren(QuadTreeNode node, NodeDepth otherNode, Side side)
     {
         List<QuadTreeNode> arr = new List<QuadTreeNode>();
         List<NodeDepth> children = otherNode.node.GetChildren();
@@ -165,7 +219,7 @@ public class QuadTreeNode
             }
         }
         return arr;
-    }
+    }*/
 
     private NodeDepth GetRight(int depth = 0)
     {
@@ -198,7 +252,7 @@ public class QuadTreeNode
         else return parent.GetDown(depth - 1);
     }
 
-    private QuadTreeNode GetAdjacentQuad(Side side)
+    /*private QuadTreeNode GetAdjacentQuad(Side side)
     {
         QuadTreeNode node = null;
         float tolerance = (float)tree.MinSize/10;
@@ -233,7 +287,7 @@ public class QuadTreeNode
         }
         if (node == this) Debug.Log("ERROR FINDING SAME QUAD");
         return node;
-    }
+    }*/
 
     public Vector2 GetCenterPoint()
     {
