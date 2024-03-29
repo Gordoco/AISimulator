@@ -249,15 +249,28 @@ public class Agent : MonoBehaviour
         
         if (E.Count > 0)
         {
-            //Move All Edges up an index
-            for (int i = 0; i < E.Count; i++)
+            bool bTrue = false;
+            for (int i = 0; i < info.tree.GetNumEdges(); i++)
             {
-                E[i] = new DirectedEdge(E[i].startIndex + 1, E[i].endIndex + 1);
+                for (int j = 0; j < E.Count; j++)
+                {
+                    if (info.tree.GetVertex(info.tree.GetEdge(i).startIndex) == V[E[j].startIndex] && info.tree.GetVertex(info.tree.GetEdge(i).endIndex) == V[E[j].endIndex]) { bTrue = true; break; }
+                }
+                if (bTrue) break;
             }
+            if (bTrue)
+            {
 
-            //Add goal location as root with edge to old root
-            V.Insert(0, info.goalLoc);
-            E.Add(new DirectedEdge(0, 1));
+                //Move All Edges up an index
+                for (int i = 0; i < E.Count; i++)
+                {
+                    E[i] = new DirectedEdge(E[i].startIndex + 1, E[i].endIndex + 1);
+                }
+
+                //Add goal location as root with edge to old root
+                V.Insert(0, info.goalLoc);
+                E.Add(new DirectedEdge(0, 1));
+            }
         }
 
         GenericDigraph sanitizedGraph = new GenericDigraph(V, E);
