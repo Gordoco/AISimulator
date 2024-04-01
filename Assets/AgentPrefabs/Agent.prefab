@@ -96,7 +96,7 @@ GameObject:
   - component: {fileID: 8092980767597770478}
   - component: {fileID: -4175849501445752044}
   - component: {fileID: 4186088505659443717}
-  - component: {fileID: 2372576364277904097}
+  - component: {fileID: -6424725847483345517}
   m_Layer: 0
   m_Name: Agent
   m_TagString: Agent
@@ -140,8 +140,9 @@ MonoBehaviour:
   master: {fileID: 0}
   ShouldPrint: 0
   GroundingDemonstrationCooldown: 1
-  GroundingCreationCooldown: 1
-  GroundingUniqueDist: 3
+  GroundingCreationCooldown: 10
+  GroundingUniqueDist: 10
+  goalPathPoints: []
   movementDirection: {x: 0, y: 0, z: 0}
   bAwake: 0
 --- !u!114 &8092980767597770478
@@ -188,7 +189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6965a0f1ddc649e4db45ccd386ddc8f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2372576364277904097
+--- !u!114 &-6424725847483345517
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -197,6 +198,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2504367276833023728}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e831b9270aaa3d142ba4136bf75366bb, type: 3}
+  m_Script: {fileID: 11500000, guid: 0a91bfa7e8ac57b41a755a9c80cbd621, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

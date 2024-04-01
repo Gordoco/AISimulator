@@ -10,6 +10,7 @@ public class SpawnAgents : MonoBehaviour
     [SerializeField] private GameObject GoalType;
 
     public int NumberOfAgents = 10;
+    public int AgentsArrived = 0;
 
     bool bAwake = false;
 
@@ -151,7 +152,7 @@ public class SpawnAgents : MonoBehaviour
             Time.timeScale += 1;
         }
     }
-
+    int numAllAgentsMadeIt = 0;
     // Update is called once per frame
     void FixedUpdate()
     {
@@ -161,8 +162,9 @@ public class SpawnAgents : MonoBehaviour
 
         if (iCount == NUM_ITERATIONS - 1) CompleteSimulation();
         count += Time.fixedDeltaTime;
-        if (count >= AGENT_SLEEP_INTERVAL)
+        if (count >= AGENT_SLEEP_INTERVAL || AgentsArrived == NumberOfAgents)
         {
+            if (AgentsArrived == NumberOfAgents) numAllAgentsMadeIt++;
             //Debug.Break();
             iterationNum++;
             Debug.Log("Iteration Finished");
@@ -170,6 +172,7 @@ public class SpawnAgents : MonoBehaviour
             {
                 agents[i].GetComponent<Agent>().GetPlanner().CancelPath();
                 agents[i].GetComponent<Agent>().bAwake = false;
+                agents[i].GetComponent<Agent>().goalPathPoints.Clear();
                 agents[i].transform.position = new Vector3(agents[i].transform.position.x, 9999, agents[i].transform.position.z);
             }
 
@@ -195,6 +198,7 @@ public class SpawnAgents : MonoBehaviour
                 agent.ArrivedAtGoal = false;
             }
             count = 0;
+            AgentsArrived = 0;
             iCount++;
         }
     }
@@ -260,6 +264,7 @@ public class SpawnAgents : MonoBehaviour
 
     void CompleteSimulation()
     {
+        Debug.Log(numAllAgentsMadeIt);
         Debug.Break();
     }
 }

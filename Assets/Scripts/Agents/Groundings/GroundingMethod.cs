@@ -9,6 +9,11 @@ public class GroundingMethod : MonoBehaviour
         return true;
     }
 
+    public virtual bool CanGround(Agent owner)
+    {
+        return true;
+    }
+
     // Update is called once per frame
     void FixedUpdate()
     {

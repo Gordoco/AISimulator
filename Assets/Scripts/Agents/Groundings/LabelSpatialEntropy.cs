@@ -37,4 +37,9 @@ public class LabelSpatialEntropy : GroundingMethod
         }
         return false;
     }
+
+    public override bool CanGround(Agent owner)
+    {
+        return true;
+    }
 }

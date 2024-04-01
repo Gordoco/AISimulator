@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -44,13 +45,14 @@ public class Agent : MonoBehaviour
     [SerializeField] public float GroundingUniqueDist = 3;
 
     public List<GroundingInfo> groundings;
-    private List<Vector2> goalPathPoints = new List<Vector2>();
+    public List<Vector2> goalPathPoints = new List<Vector2>();
     private DynamicCoordinateGrid mapping;
     private PathPlanner planner;
     public Vector3 movementDirection = Vector3.zero;
     private List<QuadTreeNode> visitedNodes = new List<QuadTreeNode>();
     private int visitedCount = 0;
     public bool bAwake = false;
+    private bool goalCooldown = false;
 
     QuadTree tree;
 
@@ -72,7 +74,7 @@ public class Agent : MonoBehaviour
 
         Bounds bounds = GetComponent<Collider>().bounds;
         float radius = Vector3.Distance(bounds.center + bounds.extents, bounds.center);
-        tolerance = radius;
+        tolerance = radius/2;
         collisionDist = radius*2.1f;
 
         Debug.Log("Agent Spawned");
@@ -246,15 +248,35 @@ public class Agent : MonoBehaviour
             }
             numNodesVisited++;
         }
+
+        //Transform Edge Indexes to new Tree
+        for (int i = 0; i < E.Count; i++)
+        {
+            int newStart = V.IndexOf(info.tree.GetVertex(E[i].startIndex));
+            int newEnd = V.IndexOf(info.tree.GetVertex(E[i].endIndex));
+
+            E[i] = new DirectedEdge(newStart, newEnd);
+        }
         
         if (E.Count > 0)
         {
             bool bTrue = false;
             for (int i = 0; i < info.tree.GetNumEdges(); i++)
             {
+                List<DirectedEdge> EdgesToRemove = new List<DirectedEdge>();
                 for (int j = 0; j < E.Count; j++)
                 {
-                    if (info.tree.GetVertex(info.tree.GetEdge(i).startIndex) == V[E[j].startIndex] && info.tree.GetVertex(info.tree.GetEdge(i).endIndex) == V[E[j].endIndex]) { bTrue = true; break; }
+                    try
+                    {
+                        if (E[j].startIndex == -1 || E[j].endIndex == -1) EdgesToRemove.Add(E[j]);
+                        if (info.tree.GetVertex(info.tree.GetEdge(i).startIndex) == V[E[j].startIndex] && info.tree.GetVertex(info.tree.GetEdge(i).endIndex) == V[E[j].endIndex]) { bTrue = true; break; }
+                    } 
+                    catch(ArgumentOutOfRangeException e)
+                    {
+                        Debug.Log("New Tree: ESize: " + E.Count + " Edge: " + j);
+                        Debug.Log("New Tree: VSize: " + V.Count + " EdgeStart: " + E[j].startIndex + " EdgeEnd: " + E[j].endIndex);
+                    }
+                    for (int w = 0; w < EdgesToRemove.Count; w++) E.Remove(EdgesToRemove[w]);
                 }
                 if (bTrue) break;
             }
@@ -275,22 +297,19 @@ public class Agent : MonoBehaviour
 
         GenericDigraph sanitizedGraph = new GenericDigraph(V, E);
         if (sanitizedGraph.GetNumVertices() == 0) return;
-        if (ShouldPrint) sanitizedGraph.Print(2, 10);
+        if (ShouldPrint || master.agentViewingNum == -1) sanitizedGraph.Print(2, 10);
 
         //Check if path is possible given current information
-        float currClosest = Mathf.Infinity;
-        int index = -1;
-        for (int i = sanitizedGraph.GetNumVertices() - 1; i >= 0; i--)
+        for (int i = 0; i < sanitizedGraph.GetNumVertices(); i++)
         {
-            float dist = Vector2.Distance(sanitizedGraph.GetVertex(i), mapping.toVector2(transform.position));
-            if (dist < currClosest)
+            if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(i), mapping).path.Count > 0) 
             {
-                currClosest = dist;
-                index = i;
-            } 
+                goalPathPoints.Insert(0, sanitizedGraph.GetVertex(i));
+                break;
+            }
         }
 
-        if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(index), mapping).path.Count > 0)
+        /*if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(index), mapping).path.Count > 0)
         {
             goalPathPoints.Add(sanitizedGraph.GetVertex(index));
         }
@@ -306,7 +325,8 @@ public class Agent : MonoBehaviour
                 index = nextNode;
             }
             else break;
-        }
+        }*/
+        return;
     }
 
     public GroundingInfo RecieveDemonstration(GroundingInfo input)
@@ -427,17 +447,25 @@ public class Agent : MonoBehaviour
      */
     void FixedUpdate()
     {
-        if (!bAwake) return; //Simply wait for simulation initialization
+        if (!bAwake)
+            return; //Simply wait for simulation initialization
+
+        if (ShouldPrint) for (int i = 0; i < goalPathPoints.Count; i++)
+            {
+                Debug.DrawLine(mapping.toVector3(50, goalPathPoints[i]), mapping.toVector3(-50, goalPathPoints[i]), Color.green, Time.fixedDeltaTime);
+            }
+
         count += Time.fixedDeltaTime; //Time counter used for various methods within Update
         groundingDemonstrationCount += Time.fixedDeltaTime;
         groundingCreationCount += Time.fixedDeltaTime;
         //Goal Reference
         GameObject goal = GameObject.FindGameObjectWithTag("Goal");
 
-        if (Vector3.Distance(transform.position, goal.transform.position) <= visionDist && Vector3.Distance(transform.position, goal.transform.position) > collisionDist)
+        if (Vector3.Distance(transform.position, goal.transform.position) <= visionDist && Vector3.Distance(transform.position, goal.transform.position) > collisionDist && !goalCooldown)
         {
             //If the goal is detected in local vision, head there
             //Debug.Log("FOUND GOAL AT DISTANCE: " + Vector3.Distance(transform.position, goal.transform.position));
+            if (planner.bCollisionReset) goalCooldown = true;
             planner.CancelPath();
             movementDirection = (goal.transform.position - transform.position).normalized;
         }
@@ -451,14 +479,18 @@ public class Agent : MonoBehaviour
             mapping.Move(new Vector2(origPos.x, origPos.z), this, true, planner, false, ShouldPrint);
 
             ArrivedAtGoal = true;
+            goalPathPoints.Clear();
             bAwake = false;
             GetComponent<BroadcastGoal>().Broadcast(groundings);
+            master.AgentsArrived++;
             transform.position = new Vector3(transform.position.x, 9999, transform.position.z);
             //BROADCAST
         }
-        else if (groundingCreationCount > GroundingCreationCooldown && GetComponent<GroundingMethod>().ExecuteGrounding(this))
+        else if (groundingCreationCount > GroundingCreationCooldown && GetComponent<GroundingMethod>().CanGround(this))
         {
             //If the criteria for generating a grounding are met, create a new grounding
+            GetComponent<GroundingMethod>().ExecuteGrounding(this);
+            groundingCreationCount = 0;
         }
         else if (count > updateInterval && !planner.OnPath)
         {
@@ -556,7 +588,7 @@ public class Agent : MonoBehaviour
     {
         updateInterval = 0.05f;
         Vector3 temp = Vector3.zero;
-        var rand = Random.Range(0, 4);
+        var rand = UnityEngine.Random.Range(0, 4);
         switch (rand)
         {
             case 0:
@@ -619,7 +651,11 @@ public class Agent : MonoBehaviour
             visitedCount++;
         }
 
-        if (node == null || planner.bCollisionReset)
+        if (goalPathPoints.Count > 0 && !planner.bCollisionReset && !goalCooldown)
+        {
+            if (!planner.Move(tree, mapping.toVector2(transform.position), goalPathPoints[0], mapping)) goalPathPoints.RemoveAt(0);
+        }
+        else if (node == null || planner.bCollisionReset)
         {
             Vector3 origPos = transform.position;
             mapping.Move(new Vector2((int)origPos.x - 1, (int)origPos.z - 1), this, true, planner, false, ShouldPrint);
@@ -633,10 +669,10 @@ public class Agent : MonoBehaviour
             movementDirection = temp.normalized;
 
             planner.bCollisionReset = false;
+            goalCooldown = true;
         }
         else
         {
-
             planner.bCollisionReset = false;
             Vector2 init = new Vector2(transform.position.x, transform.position.z);
             /*dx = max(centerX - rectLeft, rectRight - centerX);
@@ -687,6 +723,7 @@ public class Agent : MonoBehaviour
             dir.Normalize();
          
             planner.Move(tree, init, destination, mapping, dist / movementSpeed, ShouldPrint);
+            goalCooldown = false;
         }
     }
 

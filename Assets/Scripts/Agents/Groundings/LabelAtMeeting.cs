@@ -29,4 +29,18 @@ public class LabelAtMeeting : GroundingMethod
         }
         return false;
     }
+
+    public override bool CanGround(Agent owner)
+    {
+        GameObject[] others = GameObject.FindGameObjectsWithTag("Agent");
+        foreach (GameObject other in others)
+        {
+            if (other == owner.gameObject) continue;
+            if (Vector2.Distance(owner.GetMapping().toVector2(other.transform.position), owner.GetMapping().toVector2(owner.transform.position)) <= owner.collisionDist && other.GetComponent<Agent>().CanGround())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }
