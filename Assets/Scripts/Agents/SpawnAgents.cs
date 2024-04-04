@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class SpawnAgents : MonoBehaviour
 {
@@ -24,12 +25,14 @@ public class SpawnAgents : MonoBehaviour
     private List<GameObject> agents = new List<GameObject>();
     private GameObject Goal;
     private List<Grounding> globalGroundings = new List<Grounding>();
+    private List<int> globalGroundingConsistency = new List<int>();
 
     // Start is called before the first frame update
     void Start()
     {
         Time.timeScale = SIM_TIMESCALE;
         agents.AddRange(GameObject.FindGameObjectsWithTag("Agent"));
+        fileLines.Add("Iteration 1");
         int temp = agents.Count;
         InitAgents(true);
         NumberOfAgents += temp;
@@ -152,19 +155,23 @@ public class SpawnAgents : MonoBehaviour
             Time.timeScale += 1;
         }
     }
+
     int numAllAgentsMadeIt = 0;
     // Update is called once per frame
     void FixedUpdate()
     {
         if (!bAwake) return;
+        TimeToComplete += Time.fixedDeltaTime;
 
         Debug_UpdateGroundings();
 
-        if (iCount == NUM_ITERATIONS - 1) CompleteSimulation();
+        if (iCount == NUM_ITERATIONS) {CompleteSimulation(); return; }
         count += Time.fixedDeltaTime;
+        IterationTimeToComplete += Time.fixedDeltaTime;
         if (count >= AGENT_SLEEP_INTERVAL || AgentsArrived == NumberOfAgents)
         {
             if (AgentsArrived == NumberOfAgents) numAllAgentsMadeIt++;
+            CompleteIteration();
             //Debug.Break();
             iterationNum++;
             Debug.Log("Iteration Finished");
@@ -200,6 +207,8 @@ public class SpawnAgents : MonoBehaviour
             count = 0;
             AgentsArrived = 0;
             iCount++;
+            if (iCount != NUM_ITERATIONS)
+                fileLines.Add("Iteration " + (iCount + 1));
         }
     }
 
@@ -211,10 +220,11 @@ public class SpawnAgents : MonoBehaviour
     void Debug_UpdateGroundings()
     {
         List<Grounding> emptyGroundings = new List<Grounding>();
+        globalGroundingConsistency.Clear();
         for (int i = 0; i < globalGroundings.Count; i++)
         {
             globalGroundings[i].gameObject.SetActive(false);
-            int count = 0;
+            globalGroundingConsistency.Add(0);
             string text = "";
             for (int j = 0; j < NumberOfAgents; j++)
             {
@@ -236,7 +246,7 @@ public class SpawnAgents : MonoBehaviour
                                 globalGroundings[i].gameObject.SetActive(true);
                                 text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
                             }
-                            count++;
+                            globalGroundingConsistency[i]++;
                             bFoundGrounding = true;
                             DEBUG_GI = agents[j].GetComponent<Agent>().groundings[k];
                         }
@@ -244,9 +254,9 @@ public class SpawnAgents : MonoBehaviour
                 }
                 if (bBad) agents[j].GetComponent<Agent>().groundings.Remove(DEBUG_GI);
             }
-            if (agentViewingNum == -1) text = "" + count;
+            if (agentViewingNum == -1) text = "" + globalGroundingConsistency[i];
 
-            if (count == 0) emptyGroundings.Add(globalGroundings[i]);
+            if (globalGroundingConsistency[i] == 0) emptyGroundings.Add(globalGroundings[i]);
 
             globalGroundings[i].GetComponentInChildren<TextMesh>().text = text;
             if (agentViewingNum == -1) globalGroundings[i].gameObject.SetActive(true);
@@ -262,9 +272,46 @@ public class SpawnAgents : MonoBehaviour
         }
     }
 
+    List<string> fileLines = new List<string>();
+    float IterationTimeToComplete = 0f;
+    void CompleteIteration()
+    {
+        fileLines.Add("Iteration Time Taken: " + IterationTimeToComplete);
+        float IterationConsistency = 0;
+        for (int i = 0; i < globalGroundings.Count; i++)
+        {
+            IterationConsistency += (float)globalGroundingConsistency[i] / (float)NumberOfAgents;
+        }
+        IterationConsistency /= (float)globalGroundingConsistency.Count;
+        fileLines.Add("Iteration Grounding Consistency: " + (IterationConsistency * 100) + "%");
+        IterationTimeToComplete = 0;
+    }
+
+    float TimeToComplete = 0f;
     void CompleteSimulation()
     {
-        Debug.Log(numAllAgentsMadeIt);
+        fileLines.Add("Number Rounds Successful: " + numAllAgentsMadeIt);
+        float IterationConsistency = 0;
+        for (int i = 0; i < globalGroundings.Count; i++)
+        {
+            IterationConsistency += (float)globalGroundingConsistency[i] / (float)NumberOfAgents;
+        }
+        IterationConsistency /= (float)globalGroundingConsistency.Count;
+        fileLines.Add("Final Grounding Consistency: " + (IterationConsistency * 100) + "%");
+        fileLines.Add("Total Time Taken: " + (TimeToComplete) + "s");
+        OutputResult();
         Debug.Break();
+    }
+
+    bool SAFETEY = false;
+    void OutputResult()
+    {
+        if (SAFETEY) { Debug.Log("DANGER"); return; }
+        string filename = "Results_" + System.DateTime.Now.ToString().Replace(" ", "").Replace(":", "").Replace(".", "") + ".txt";
+        SAFETEY = true;
+        if (File.Exists(filename)) return;
+        var newFile = File.CreateText(filename);
+        for (int i = 0; i < fileLines.Count; i++) newFile.WriteLine(fileLines[i]);
+        newFile.Close();
     }
 }
