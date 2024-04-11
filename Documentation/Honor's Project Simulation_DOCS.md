@@ -12,7 +12,7 @@
  Class representing the simulation of a physical agent within the digital environment
 
 
-    public class Agent : MonoBehaviour
+    [RequireComponent(typeof(BroadcastGoal))]
 
 
 
@@ -22,6 +22,80 @@
 
 
     public void Init()
+
+
+
+ #### GroundingInfo AddGrounding(Grounding, int = 1)
+
+ Adds a new grounding to agent, for use when constructed through GroundingMethod subclass
+
+
+    public GroundingInfo AddGrounding(Grounding newGrounding, int localConsistency = 1)
+
+
+
+ #### GroundingInfo AddGrounding(GroundingInfo)
+
+ Adds an existing grounding to agent, for use when sharing groundings through demonstration
+
+
+    public GroundingInfo AddGrounding(GroundingInfo grounding)
+
+
+
+ #### bool CanGround()
+
+ Checks if the cooldown for grounding has elapsed
+
+
+    public bool CanGround()
+
+
+
+ #### bool RequestRecieveDemonstration()
+
+ Checks if the cooldown for grounding has elapsed
+
+
+    public bool RequestRecieveDemonstration()
+
+
+
+ #### void RecieveGoalBroadcast(GroundingInfo)
+
+ Simple broadcast handle for a single grounding
+
+
+    public void RecieveGoalBroadcast(GroundingInfo info)
+
+
+
+ #### void RecieveGoalBroadcast(GroundingTree)
+
+ Complex broadcast handle for the waypoint system
+
+
+    public void RecieveGoalBroadcast(GroundingTree info)
+
+
+
+ #### GroundingInfo RecieveDemonstration(GroundingInfo)
+
+ Handle a foreign agent demonstration and return the GroundingInfo that is kept after analysis
+
+
+    public GroundingInfo RecieveDemonstration(GroundingInfo input)
+
+
+
+ #### void OnCollisionEnter(Collision)
+
+ Unity method for evaluating collisions.
+
+ Used to error check collision prevention systems.
+
+
+    public void OnCollisionEnter(Collision collision)
 
 
 
@@ -50,25 +124,130 @@
  Implements wandering functionality (mainly for debugging)
 
 
-    void Update()
+    void FixedUpdate()
 
-### Goal
--------
+
+
+ #### Wander Algorithm
+
+ Currently in a test implementation format, should implement an efficent domain-independant exploration algorithm
+
+
+    private void WanderAlgorithm()
+
+
+
+ #### PathExecution()
+
+ Utilizes calculated path to plan motion direction for the next timestep
+
+
+    private void PathExecution()
 
 ### SpawnAgents
 -------
 
+
+
+ #### Grounding CreateGrounding(Vector3)
+
+ Creates a new object to represent a grounding
+
+
+    public Grounding CreateGrounding(Vector3 position)
+
+
+
+ #### void RemoveGrounding(GroundingInfo)
+
+ Destroys and removes all reference to the specified Grounding, should be done after agent local references are removed
+
+
+    public void RemoveGrounding(GroundingInfo grounding)
+
+
+
+ #### int GetUniqueID()
+
+ Creates a new integer ID for use in naming groundings
+
+
+    public int GetUniqueID()
+
+
+
+ #### void InitAgents(bool bStart = false)
+
+ Initializes an experiment when bStart == true, or an iteration when false
+
+
+    public void InitAgents(bool bStart = false)
+
+
+
+ #### bool CheckValidLoc(Vector3)
+
+ Ensures a location in space is clear to spawn an agentthe goal in
+
+
+    private bool CheckValidLoc(Vector3 location)
+
+
+
+ #### void CompleteIteration()
+
+ Adds Logging for an iteration to temp array
+
+
+    void CompleteIteration()
+
+
+
+ #### void CompleteSimulation()
+
+ Adds end of experiment logging to temp array;
+
+
+    void CompleteSimulation()
+
+
+
+ #### void OutputResult()
+
+ Writes complete experiment results to a logging file based on temp array
+
+
+    void OutputResult()
+
+### TEST_TriggerSpecifiedAgents
+-------
+
+
+
+ Test Script for allowing hand placed agents to be included in simulations
+
+
+    public class TESTTriggerSpecifiedAgents : MonoBehaviour
+
 ### BroadcastGoal
 -------
 
-### GroundedHeading
--------
 
-### NearestGrounding
--------
+
+ Superclass for grounded broadcasting by agents
+
+
+    public class BroadcastGoal : MonoBehaviour
 
 ### Waypoint
 -------
+
+
+
+ Class implementing BroadcastGoal responsible for waypoint tree construction and broadcasting
+
+
+    public class Waypoint : BroadcastGoal
 
 ### DynamicCoordinateGrid
 -------
@@ -116,6 +295,70 @@
 
     public void Print(float inverseMoveSpeed = 0.2f)
 
+### GenericDigraph
+-------
+
+
+
+ Class representing a generic, directed graph with weights corresponding to euclidian distance between vectors
+
+
+    public class GenericDigraph
+
+
+
+ #### GenericDigraph(List<Vector2> List<DirectedEdge>)
+
+ Constructor expecting pre-formatted verticies and edges
+
+
+    public GenericDigraph(List<Vector2> verts, List<DirectedEdge> edges)
+
+
+
+ #### List<int> GetNeighborIndecies(int)
+
+ Retrieve all neighbors from index input
+
+
+    public List<int> GetNeighborIndecies(int vertIndex)
+
+
+
+ #### List<int> GetNeighborIndecies(Vector2)
+
+ Retrieve all neighbors from location input
+
+
+    public List<int> GetNeighborIndecies(Vector2 vert)
+
+
+
+ #### List<Vector2> GetNeighborIndecies(int)
+
+ Retrieve all neighbors as vectors from index input
+
+
+    public List<Vector2> GetNeighbors(int vertIndex)
+
+
+
+ #### List<Vector2> GetNeighborIndecies(Vector2)
+
+ Retrieve all neighbors as vectors from vector input
+
+
+    public List<Vector2> GetNeighbors(Vector2 vert)
+
+
+
+ #### void Print()
+
+ Debugging method for creating a visual representation of the graph in world space
+
+
+    public void Print(float height, float time = 0)
+
 ### MappingIDs
 -------
 
@@ -132,7 +375,7 @@
  Grounding: Location is traversable and contains a grounding which may be demonstrated
 
 
-    public enum MappingIDs { Undefined, Free, Full, Grounding }
+    public enum MappingIDs { Undefined, Free, Full }
 ### NodeDepth
 -------
 
@@ -177,7 +420,7 @@
  Creates the physical QuadTree by initializing one base quad on the entire grid and recursivly partitioning that quad
 
 
-    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f)
+    public void Construct(DynamicCoordinateGrid mapping, Vector3 offset, float time = 0.1f, bool bPrint = false)
 
 
 
@@ -190,12 +433,57 @@
 
 
 
+ #### QuadTreeNode GetNearestFreeNode(Vector2)
+
+ Retrieves the closest node in the QuadTree with NodeID.Free
+
+
+    public QuadTreeNode GetNearestFreeNode(Vector2 location)
+
+
+
+ #### List<NodeDepth> GetFurthestFreeNodeDepths(Vector2)
+
+ Retrieves a sorted list of all nodes by distance to specified location, along with Node Depth in the QuadTree
+
+
+    public List<NodeDepth> GetFurthestFreeNodeDepths(Vector2 location)
+
+
+
  #### QuadTreeNode GetFurthestFreeNodes(Vector2)
 
  Takes in an (X, Z) world location and returns a list of all nodes which are free in sorted order on distance
 
 
-    public List<NodeDepth> GetFurthestFreeNodes(Vector2 location)
+    public List<QuadTreeNode> GetFurthestFreeNodes(Vector2 location)
+
+
+
+ #### void Shuffle<T>(List<T>)
+
+ Simple array shuffler
+
+
+    public void Shuffle<T>(List<T> ts)
+
+
+
+ #### List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2, Vector2) 
+
+ Based on a given direction, gets furthest free node that is necessarily within the same connected component as the location specified
+
+
+    public List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2 location, Vector2 dir) 
+
+
+
+ List<QuadTreeNode> GetLeaves()
+
+ Method to return all the leaves of the quad tree for path finding graph construction
+
+
+    public List<QuadTreeNode> GetLeaves()
 
 
 
@@ -222,7 +510,7 @@
  Recursive method for splitting quads depending on the result of the MustBeSubdivided method
 
 
-    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    void Partition(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
 
 
 
@@ -233,7 +521,7 @@
  Determines if a split is needed which is then propogated by Partition
 
 
-    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping)
+    bool MustBeSubdivided(QuadTreeNode node, DynamicCoordinateGrid mapping, bool bPrint = false)
 
 ### QuadTreeNode
 -------
@@ -256,6 +544,60 @@
 
 
 
+ #### QuadTreeNode GetNode(Vector2)
+
+ Gets the leaf node which contains the specified location
+
+
+    public QuadTreeNode GetNode(Vector2 location)
+
+
+
+ #### bool CheckIfWithin(Vector2)
+
+ Checks if a specified point is within the bounds for the current node
+
+
+    public bool CheckIfWithin(Vector2 point)
+
+
+
+ #### bool NodeIsLeaf()
+
+ Checks if node has been subdivided
+
+
+    public bool NodeIsLeaf()
+
+
+
+ #### List<NodeDepth> GetChildren(int depth = 0)
+
+ Returns all children of a QuadTree from this node on, utilizes recursion
+
+
+    public List<NodeDepth> GetChildren(int depth = 0)
+
+
+
+ #### List<NodeDepth> GetFreeChildren()
+
+ Gets all children within the QuadTree which are free for pathing
+
+
+    public List<NodeDepth> GetFreeChildren(int depth = 0)
+
+
+
+ #### List<QuadTreeNode> GetDirections()
+
+ Returns the neighbors of the node within the QuadTree
+
+
+    public List<QuadTreeNode> GetDirections()
+
+
+
  #### void Print()
 
  A primarily debugging method which draws the quads overlayed in 3D space for visualization
@@ -275,11 +617,96 @@
 ### GroundingMethod
 -------
 
+
+
+ Superclass for grounded construction by agents
+
+
+    public class GroundingMethod : MonoBehaviour
+
+
+
+ #### bool ExecuteGrounding(Agent)
+
+ Superclass hook for grounding construction
+
+
+    public virtual bool ExecuteGrounding(Agent owner)
+
+
+
+ #### bool CanGround(Agent)
+
+ Superclass hook for grounding verification
+
+
+    public virtual bool CanGround(Agent owner)
+
 ### LabelAtMeeting
 -------
 
+
+
+ Class to implement Label-At-Meeting communication strategy
+
+
+    public class LabelAtMeeting : GroundingMethod
+
+
+
+ #### override bool ExecuteGrounding(Agent)
+
+ Superclass override which should be called on a clock based on groundingCreationCooldown
+
+
+    public override bool ExecuteGrounding(Agent owner)
+
+
+
+ #### override bool CanGround(Agent)
+
+ Superclass override which checks if grounding is valid in a non-destructive way
+
+
+    public override bool CanGround(Agent owner)
+
 ### LabelSpatialEntropy
 -------
+
+
+
+ Class to implement Label-Spatial-Entropy communication strategy
+
+
+    public class LabelSpatialEntropy : GroundingMethod
+
+
+
+ #### override bool ExecuteGrounding(Agent)
+
+ Superclass override which should be called on a clock based on groundingCreationCooldown
+
+
+    public override bool ExecuteGrounding(Agent owner)
+
+
+
+ #### override bool CanGround(Agent)
+
+ Superclass override which checks if grounding is valid in a non-destructive way
+
+
+    public override bool CanGround(Agent owner)
+
+### NoGrounding
+-------
+
+
+
+ Placeholder component for running baselines
+
+
+    public class NoGrounding : GroundingMethod
 
 ### PathNode
 -------
@@ -303,6 +730,15 @@
 
 
 
+ #### PathInfo
+
+ Struct to hold path information, path variable should be exactly 2 larger than nodes array to account for start and end locations
+
+
+    public struct PathInfo
+
+
+
  #### bool CheckForValidPath(Vector2, DynamicCoordinateGrid)
 
  Uses the A star algorithm to search for a valid path through the local grid's QuadTree
@@ -310,7 +746,78 @@
  Returns based on ability to find a valid path
 
 
-    public List<Vector2> CheckForValidPath(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
+    public PathInfo CheckForValidPath(QuadTree tree, Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f, bool bPrint = false)
+
+
+
+ #### List<int> GenericAStar(GenericDigraph)
+
+ Takes in a generic graph with the assumption that the first element of the vertex array is the start
+
+ and the last element is the end of the desired path.
+
+ Returns a list of vertex indecies describing the calculated path.
+
+
+    private List<int> GenericAStar(GenericDigraph graph, float time = 0f, float height = 1, bool shouldPrint = false)
+
+
+
+ #### List<Vector2> OptimizePath(List<Vector2>)
+
+ Assumes path input is valid with non-zero length, applies rubber-banding to optimize path length
+
+
+    private List<Vector2> OptimizePath(PathInfo pathInfo, float time = 0.2f, bool bPrint = false)
+
+
+
+ List<Vector2> VisibilitySimplification(PathInfo, List<Vector2>)
+
+ Method which performs "visibility" checks on path segments and removes unessesary points which don't affect path validity
+
+ Specifically, removes points which, when skipped, allow for the path to remain within the same quads as before.
+
+
+    private List<Vector2> VisibilitySimplification(PathInfo originalPath, List<Vector2> pathPoints, bool bShouldPrint = false, float time = 0.2f, float height = 1)
+
+
+
+ bool Intersects(Vector2, Vector2, Vector2, Vector2, out Vector2)
+
+ Line intersection helper method, takes in two lines and outputs the boolean intersaction and intersection location
+
+
+    private bool Intersects(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2, out Vector2 intersection)
+
+
+
+ GenericDigraph GenerateGraphFromQuadTree(Vector2, Vector2, QuadTree)
+
+ Generates a graphical representation of a QuadTree along with a start and end location for pathfinding
+
+ Creates the graph as two uni-directional edges connecting the centers of each neighboring quad in the tree.
+
+
+    private GenericDigraph GenerateGraphFromQuadTree(Vector2 startLoc, Vector2 endLoc, QuadTree tree)
+
+
+
+ #### GenericDigraph GenerateGraphFromQuadTreePath(PathInfo)
+
+ Method for constructing a weighted digraph from the edges of the quads determined by A
+
+
+    private GenericDigraph GenerateGraphFromQuadTreePath(PathInfo pathInfo)
+
+
+
+ #### Vector2[] GetEdgePoints(QuadTreeNode, QuadTreeNode)
+
+ Determines the points of the smallest quad which lie on the boundry of the largest quad
+
+
+    private Vector2[] GetEdgePoints(QuadTreeNode curr, QuadTreeNode next)
 
 
 
@@ -321,7 +828,16 @@
  Returns based on ability to conduct a move
 
 
-    public bool Move(Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f)
+    public bool Move(QuadTree tree, Vector2 initialLocation, Vector2 location, DynamicCoordinateGrid mapping, float time = 0.2f, bool bPrint = false)
+
+
+
+ #### void CancelPath(bool = false, Vector3 = new Vector3())
+
+ Cancels current pathfinding operation
+
+
+    public void CancelPath(bool bCollision = false, Vector3 collisionDir = new Vector3())
 
 ### ReactiveCollisionPrevention
 -------
@@ -376,6 +892,16 @@
 
 
     public class PlayerMove : MonoBehaviour
+
+### UIHandler
+-------
+
+
+
+ Helper Script for managing the various UI objects in player view
+
+
+    public class UIHandler : MonoBehaviour
 
 ## Generation
 
@@ -436,17 +962,6 @@
 
 
     public class GenerateChunks : MonoBehaviour
-
-
-
-
-
-Terrain-specific valu
-    private List<GameObject> terrain = new List<GameObject>();
-
-
-
-
 
 
 
@@ -597,42 +1112,6 @@ Terrain-specific valu
 
 
     public class GenerateTerrain : MonoBehaviour
-
-             
-
-
-
- Side meshing verticie
-    protected Vector3[][] sidedVertices; Copied from verticies
-
-            
-
-
-
- Main mesh vertecie
-    protected Vector3[] vertices;
-
-           
-
-
-
-private MeshCollider MC;
-
-private bool bInit = false;
-
-private int SEED = 12345678;
-
-
-
- Start is called before the first frame update
-
-void Start() {
-
-
-
-}
-
-
 
 
 
@@ -802,26 +1281,6 @@ void Start() {
 
     void LateUpdate()
 
-                
-
-}
-
-else
-
-{
-
-foliageRenderers[i].enabled = false; Hide
-
-}
-
-}
-
-}
-
-}
-
-
-
 
 
  #### void initialize
@@ -848,20 +1307,6 @@ foliageRenderers[i].enabled = false; Hide
 
 
     void SpawnFoliage()
-
-                         
-
-
-
-instantiateFoliageInstance(xVal, zVal, count);
-
-count++;
-
-}
-
-}
-
-
 
 
 
@@ -919,20 +1364,6 @@ count++;
 
 
     public class MazeGenerator : GenerateTerrain
-
-            
-
-
-
-[HideInInspector] public bool hasFloor = true;
-
-
-
-private int oldVertLength = 0;
-
-private int TrueOldVertLength = 0;
-
-
 
 
 

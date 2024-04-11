@@ -2,8 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ * Class to implement Label-At-Meeting communication strategy
+ */
 public class LabelAtMeeting : GroundingMethod
 {
+
+    /**
+     * #### override bool ExecuteGrounding(Agent)
+     * Superclass override which should be called on a clock based on groundingCreationCooldown
+     */
     public override bool ExecuteGrounding(Agent owner)
     {
         GameObject[] others = GameObject.FindGameObjectsWithTag("Agent");
@@ -30,6 +38,11 @@ public class LabelAtMeeting : GroundingMethod
         return false;
     }
 
+
+    /**
+     * #### override bool CanGround(Agent)
+     * Superclass override which checks if grounding is valid in a non-destructive way
+     */
     public override bool CanGround(Agent owner)
     {
         GameObject[] others = GameObject.FindGameObjectsWithTag("Agent");

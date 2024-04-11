@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+/**
+ * Helper Script for managing the various UI objects in player view
+ */
 public class UIHandler : MonoBehaviour
 {
     [SerializeField] private TMP_Text ViewingText;

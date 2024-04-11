@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor.SceneManagement;
 
 public enum Direction {
     LEFT, 
@@ -37,7 +36,6 @@ public class GenerateChunks : MonoBehaviour
     public bool shouldExpand = true;
 
     [SerializeField] private bool RESET = false;
-    /***********************/
 
     /*Terrain-specific values*/
     private List<GameObject> terrain = new List<GameObject>();
@@ -45,7 +43,6 @@ public class GenerateChunks : MonoBehaviour
     private float rand;
     private ObjectPool chunkPool;
     private List<ObjectPool[]> foliagePools;
-    /*************************/
 
     /**
      * #### void Awake

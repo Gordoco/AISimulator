@@ -45,6 +45,10 @@ public class QuadTreeNode
         this.h = height;
     }
 
+    /**
+     * #### QuadTreeNode GetNode(Vector2)
+     * Gets the leaf node which contains the specified location
+     */
     public QuadTreeNode GetNode(Vector2 location)
     {
         if (location.x >= x && location.x < x + w
@@ -69,16 +73,28 @@ public class QuadTreeNode
         return null;
     }
 
+    /**
+     * #### bool CheckIfWithin(Vector2)
+     * Checks if a specified point is within the bounds for the current node
+     */
     public bool CheckIfWithin(Vector2 point)
     {
         return point.x >= x && point.x <= x + w && point.y >= y && point.y <= y + h;
     }
 
+    /**
+     * #### bool NodeIsLeaf()
+     * Checks if node has been subdivided
+     */
     public bool NodeIsLeaf()
     {
         return NW == null && NE == null && SE == null && NW == null;
     }
 
+    /**
+     * #### List<NodeDepth> GetChildren(int depth = 0)
+     * Returns all children of a QuadTree from this node on, utilizes recursion
+     */
     public List<NodeDepth> GetChildren(int depth = 0)
     {
         var arr = new List<NodeDepth>();
@@ -98,6 +114,10 @@ public class QuadTreeNode
         return arr;
     }
 
+    /**
+     * #### List<NodeDepth> GetFreeChildren()
+     * Gets all children within the QuadTree which are free for pathing
+     */
     public List<NodeDepth> GetFreeChildren(int depth = 0)
     {
         List<NodeDepth> children = GetChildren(depth);
@@ -109,6 +129,10 @@ public class QuadTreeNode
         return arr;
     }
 
+    /**
+     * #### List<QuadTreeNode> GetDirections()
+     * Returns the neighbors of the node within the QuadTree
+     */
     public List<QuadTreeNode> GetDirections()
     {
         List<QuadTreeNode> arr = new List<QuadTreeNode>();

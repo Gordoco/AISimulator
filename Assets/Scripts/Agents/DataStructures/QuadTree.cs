@@ -40,6 +40,10 @@ public class QuadTree
         return root.GetNode(location);
     }
 
+    /**
+     * #### QuadTreeNode GetNearestFreeNode(Vector2)
+     * Retrieves the closest node in the QuadTree with NodeID.Free
+     */
     public QuadTreeNode GetNearestFreeNode(Vector2 location)
     {
         QuadTreeNode currNode = GetNode(location);
@@ -59,6 +63,11 @@ public class QuadTree
         }
         return currNearest;
     }
+
+    /**
+     * #### List<NodeDepth> GetFurthestFreeNodeDepths(Vector2)
+     * Retrieves a sorted list of all nodes by distance to specified location, along with Node Depth in the QuadTree
+     */
     public List<NodeDepth> GetFurthestFreeNodeDepths(Vector2 location)
     {
         List<NodeDepth> children = root.GetFreeChildren();
@@ -106,6 +115,10 @@ public class QuadTree
         return nodes;
     }
 
+    /**
+    * #### void Shuffle<T>(List<T>)
+    * Simple array shuffler
+    */
     public void Shuffle<T>(List<T> ts)
     {
         var count = ts.Count;
@@ -119,6 +132,10 @@ public class QuadTree
         }
     }
 
+    /**
+    * #### List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2, Vector2) 
+    * Based on a given direction, gets furthest free node that is necessarily within the same connected component as the location specified
+    */
     public List<QuadTreeNode> GetFurthestFreeNodesInDir(Vector2 location, Vector2 dir) 
     {
         List<NodeDepth> arr = GetFurthestFreeNodeDepths(location);

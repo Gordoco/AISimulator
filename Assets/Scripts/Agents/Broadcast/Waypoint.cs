@@ -16,6 +16,9 @@ public struct GroundingTree
     }
 }
 
+/**
+ * Class implementing BroadcastGoal responsible for waypoint tree construction and broadcasting
+ */
 public class Waypoint : BroadcastGoal
 {
     public override void Broadcast(List<GroundingInfo> groundings)

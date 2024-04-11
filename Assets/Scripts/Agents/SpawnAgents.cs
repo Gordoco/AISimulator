@@ -47,6 +47,10 @@ public class SpawnAgents : MonoBehaviour
         Goal = Instantiate(GoalType, locationToSpawn, Quaternion.identity);
     }
 
+    /**
+     * #### Grounding CreateGrounding(Vector3)
+     * Creates a new object to represent a grounding
+     */
     public Grounding CreateGrounding(Vector3 position)
     {
         position.y = 0;
@@ -55,6 +59,10 @@ public class SpawnAgents : MonoBehaviour
         return newGrounding;
     }
 
+    /**
+     * #### void RemoveGrounding(GroundingInfo)
+     * Destroys and removes all reference to the specified Grounding, should be done after agent local references are removed
+     */
     public void RemoveGrounding(GroundingInfo grounding)
     {
         if (globalGroundings.Contains(grounding.obj))
@@ -66,6 +74,10 @@ public class SpawnAgents : MonoBehaviour
     }
 
     List<int> usedIDs = new List<int>();
+    /**
+     * #### int GetUniqueID()
+     * Creates a new integer ID for use in naming groundings
+     */
     public int GetUniqueID()
     {
         int ID = Random.Range(0, 999999);
@@ -77,6 +89,10 @@ public class SpawnAgents : MonoBehaviour
         return ID;
     }
 
+    /**
+     * #### void InitAgents(bool bStart = false)
+     * Initializes an experiment when bStart == true, or an iteration when false
+     */
     public void InitAgents(bool bStart = false)
     {
         for (int i = 0; i < NumberOfAgents; i++)
@@ -102,6 +118,10 @@ public class SpawnAgents : MonoBehaviour
         }
     }
 
+    /**
+     * #### bool CheckValidLoc(Vector3)
+     * Ensures a location in space is clear to spawn an agent/the goal in
+     */
     private bool CheckValidLoc(Vector3 location)
     {
         RaycastHit hit;
@@ -274,6 +294,10 @@ public class SpawnAgents : MonoBehaviour
 
     List<string> fileLines = new List<string>();
     float IterationTimeToComplete = 0f;
+    /**
+     * #### void CompleteIteration()
+     * Adds Logging for an iteration to temp array
+     */
     void CompleteIteration()
     {
         fileLines.Add("Iteration Time Taken: " + IterationTimeToComplete);
@@ -288,6 +312,10 @@ public class SpawnAgents : MonoBehaviour
     }
 
     float TimeToComplete = 0f;
+    /**
+     * #### void CompleteSimulation()
+     * Adds end of experiment logging to temp array;
+     */
     void CompleteSimulation()
     {
         fileLines.Add("Number Rounds Successful: " + numAllAgentsMadeIt);
@@ -304,6 +332,10 @@ public class SpawnAgents : MonoBehaviour
     }
 
     bool SAFETEY = false;
+    /**
+     * #### void OutputResult()
+     * Writes complete experiment results to a logging file based on temp array
+     */
     void OutputResult()
     {
         if (SAFETEY) { Debug.Log("DANGER"); return; }

@@ -396,6 +396,10 @@ public class PathPlanner
         return false;
     }
 
+    /**
+     * #### void CancelPath(bool = false, Vector3 = new Vector3())
+     * Cancels current pathfinding operation
+     */
     public void CancelPath(bool bCollision = false, Vector3 collisionDir = new Vector3())
     {
         OnPath = false;

@@ -85,6 +85,10 @@ public class Agent : MonoBehaviour
         groundingCreationCount = 0;
     }
 
+    /**
+     * #### GroundingInfo AddGrounding(Grounding, int = 1)
+     * Adds a new grounding to agent, for use when constructed through GroundingMethod subclass
+     */
     public GroundingInfo AddGrounding(Grounding newGrounding, int localConsistency = 1)
     {
         int id = master.GetUniqueID();
@@ -100,6 +104,10 @@ public class Agent : MonoBehaviour
         return info;
     }
 
+    /**
+     * #### GroundingInfo AddGrounding(GroundingInfo)
+     * Adds an existing grounding to agent, for use when sharing groundings through demonstration
+     */
     public GroundingInfo AddGrounding(GroundingInfo grounding)
     {
         if (grounding.obj == null) Debug.Log("NULL1");
@@ -113,18 +121,30 @@ public class Agent : MonoBehaviour
         return grounding;
     }
 
+    /**
+     * #### bool CanGround()
+     * Checks if the cooldown for grounding has elapsed
+     */
     public bool CanGround()
     {
         if (groundingCreationCount >= GroundingDemonstrationCooldown) return true;
         return false;
     }
 
+    /**
+     * #### bool RequestRecieveDemonstration()
+     * Checks if the cooldown for grounding has elapsed
+     */
     public bool RequestRecieveDemonstration()
     {
         if (groundingDemonstrationCount >= GroundingDemonstrationCooldown) return true;
         return false;
     }
 
+    /**
+     * #### void RecieveGoalBroadcast(GroundingInfo)
+     * Simple broadcast handle for a single grounding
+     */
     public void RecieveGoalBroadcast(GroundingInfo info)
     {
         //Sanitize Broadcast in Local Context
@@ -153,6 +173,10 @@ public class Agent : MonoBehaviour
         //Upon path completion resume normal runtime
     }
 
+    /**
+     * #### void RecieveGoalBroadcast(GroundingTree)
+     * Complex broadcast handle for the waypoint system
+     */
     public void RecieveGoalBroadcast(GroundingTree info)
     {
         if (info.tree.GetNumVertices() <= 0) return;
@@ -271,7 +295,7 @@ public class Agent : MonoBehaviour
                         if (E[j].startIndex == -1 || E[j].endIndex == -1) EdgesToRemove.Add(E[j]);
                         if (info.tree.GetVertex(info.tree.GetEdge(i).startIndex) == V[E[j].startIndex] && info.tree.GetVertex(info.tree.GetEdge(i).endIndex) == V[E[j].endIndex]) { bTrue = true; break; }
                     } 
-                    catch(ArgumentOutOfRangeException e)
+                    catch(ArgumentOutOfRangeException)
                     {
                         Debug.Log("New Tree: ESize: " + E.Count + " Edge: " + j);
                         Debug.Log("New Tree: VSize: " + V.Count + " EdgeStart: " + E[j].startIndex + " EdgeEnd: " + E[j].endIndex);
@@ -308,27 +332,13 @@ public class Agent : MonoBehaviour
                 break;
             }
         }
-
-        /*if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(index), mapping).path.Count > 0)
-        {
-            goalPathPoints.Add(sanitizedGraph.GetVertex(index));
-        }
-        else return;
-        for (int i = index; i < sanitizedGraph.GetNumVertices(); i++)
-        {
-            int nextNode = -1;
-            for (int j = 0; j < sanitizedGraph.GetNumEdges(); j++) { if (sanitizedGraph.GetEdge(j).startIndex == index) { nextNode = sanitizedGraph.GetEdge(j).endIndex; break; } }
-            if (nextNode == -1) break;
-            if (planner.CheckForValidPath(tree, mapping.toVector2(transform.position), sanitizedGraph.GetVertex(nextNode), mapping).path.Count > 0)
-            {
-                goalPathPoints.Add(sanitizedGraph.GetVertex(nextNode));
-                index = nextNode;
-            }
-            else break;
-        }*/
         return;
     }
 
+    /**
+     * #### GroundingInfo RecieveDemonstration(GroundingInfo)
+     * Handle a foreign agent demonstration and return the GroundingInfo that is kept after analysis
+     */
     public GroundingInfo RecieveDemonstration(GroundingInfo input)
     {
         //Debug.Log("Recieving a demonstration");
