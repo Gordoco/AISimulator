@@ -2,10 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ * Class to implement Label-Spatial-Entropy communication strategy
+ */
 public class LabelSpatialEntropy : GroundingMethod
 {
     [SerializeField] private int entropyExtent = 2;
 
+    /**
+     * #### override bool ExecuteGrounding(Agent)
+     * Superclass override which should be called on a clock based on groundingCreationCooldown
+     */
     public override bool ExecuteGrounding(Agent owner)
     {
         DynamicCoordinateGrid mapping = owner.GetMapping();
@@ -36,5 +43,14 @@ public class LabelSpatialEntropy : GroundingMethod
             return true;
         }
         return false;
+    }
+
+    /**
+     * #### override bool CanGround(Agent)
+     * Superclass override which checks if grounding is valid in a non-destructive way
+     */
+    public override bool CanGround(Agent owner)
+    {
+        return true;
     }
 }

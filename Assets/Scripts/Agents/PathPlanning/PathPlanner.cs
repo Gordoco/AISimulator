@@ -70,6 +70,7 @@ public class PathPlanner
     private List<int> GenericAStar(GenericDigraph graph, float time = 0f, float height = 1, bool shouldPrint = false)
     {
         if (graph.GetNumVertices() <= 0) return null;
+        int MaxNodeVisits = 2000;
         List<int> path = new List<int>();
         List<AStarNode> openList = new List<AStarNode>();
         List<AStarNode> closedList = new List<AStarNode>();
@@ -79,7 +80,7 @@ public class PathPlanner
         Vector2 destination = graph.GetVertex(graph.GetNumVertices() - 1);
 
         openList.Add(new AStarNode(0, null, graph.GetVertex(0)));
-        while (openList.Count != 0)
+        while (openList.Count != 0 && MaxNodeVisits > 0)
         {
             AStarNode q = null;
             float currLowest = Mathf.Infinity;
@@ -118,8 +119,9 @@ public class PathPlanner
                 if (!bContinue) openList.Add(newNode);
             }
             closedList.Add(q);
+            MaxNodeVisits--;
         }
-        if (finalNode == null) return null;
+        if (finalNode == null) return path;
         while (finalNode != null)
         {
             path.Insert(0, graph.GetVertexIndex(finalNode.value));
@@ -394,6 +396,10 @@ public class PathPlanner
         return false;
     }
 
+    /**
+     * #### void CancelPath(bool = false, Vector3 = new Vector3())
+     * Cancels current pathfinding operation
+     */
     public void CancelPath(bool bCollision = false, Vector3 collisionDir = new Vector3())
     {
         OnPath = false;

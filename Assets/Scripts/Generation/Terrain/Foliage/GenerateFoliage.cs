@@ -50,7 +50,6 @@ public class GenerateFoliage : MonoBehaviour
 
                     /* Rotate Sprites to face Camera */
                     if (b2D) foliageObjs[i].transform.rotation = Camera.main.transform.rotation; 
-                    /* * * * * * * * * * * * * * * * */
                 }
                 else
                 {
@@ -105,7 +104,6 @@ public class GenerateFoliage : MonoBehaviour
             /* NEED TO CHANGE TO NON-OVERLAPPING RANDOM NUMBERS */
             float xVal = Random.Range(0f, xSize) + gameObject.transform.position.x;
             float zVal = Random.Range(0f, zSize) + gameObject.transform.position.z;
-            /* * * * * * * * * * * * * * * * * * * * * * * * * */
 
             instantiateFoliageInstance(xVal, zVal, count);
             count++;

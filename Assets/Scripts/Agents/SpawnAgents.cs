@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
 
 public class SpawnAgents : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class SpawnAgents : MonoBehaviour
     [SerializeField] private GameObject GoalType;
 
     public int NumberOfAgents = 10;
+    public int AgentsArrived = 0;
 
     bool bAwake = false;
 
@@ -23,12 +25,14 @@ public class SpawnAgents : MonoBehaviour
     private List<GameObject> agents = new List<GameObject>();
     private GameObject Goal;
     private List<Grounding> globalGroundings = new List<Grounding>();
+    private List<int> globalGroundingConsistency = new List<int>();
 
     // Start is called before the first frame update
     void Start()
     {
         Time.timeScale = SIM_TIMESCALE;
         agents.AddRange(GameObject.FindGameObjectsWithTag("Agent"));
+        fileLines.Add("Iteration 1");
         int temp = agents.Count;
         InitAgents(true);
         NumberOfAgents += temp;
@@ -43,6 +47,10 @@ public class SpawnAgents : MonoBehaviour
         Goal = Instantiate(GoalType, locationToSpawn, Quaternion.identity);
     }
 
+    /**
+     * #### Grounding CreateGrounding(Vector3)
+     * Creates a new object to represent a grounding
+     */
     public Grounding CreateGrounding(Vector3 position)
     {
         position.y = 0;
@@ -51,7 +59,25 @@ public class SpawnAgents : MonoBehaviour
         return newGrounding;
     }
 
+    /**
+     * #### void RemoveGrounding(GroundingInfo)
+     * Destroys and removes all reference to the specified Grounding, should be done after agent local references are removed
+     */
+    public void RemoveGrounding(GroundingInfo grounding)
+    {
+        if (globalGroundings.Contains(grounding.obj))
+        {
+            globalGroundings.Remove(grounding.obj);
+            usedIDs.Remove(grounding.ID);
+            Destroy(grounding.obj);
+        }
+    }
+
     List<int> usedIDs = new List<int>();
+    /**
+     * #### int GetUniqueID()
+     * Creates a new integer ID for use in naming groundings
+     */
     public int GetUniqueID()
     {
         int ID = Random.Range(0, 999999);
@@ -63,6 +89,10 @@ public class SpawnAgents : MonoBehaviour
         return ID;
     }
 
+    /**
+     * #### void InitAgents(bool bStart = false)
+     * Initializes an experiment when bStart == true, or an iteration when false
+     */
     public void InitAgents(bool bStart = false)
     {
         for (int i = 0; i < NumberOfAgents; i++)
@@ -88,6 +118,10 @@ public class SpawnAgents : MonoBehaviour
         }
     }
 
+    /**
+     * #### bool CheckValidLoc(Vector3)
+     * Ensures a location in space is clear to spawn an agent/the goal in
+     */
     private bool CheckValidLoc(Vector3 location)
     {
         RaycastHit hit;
@@ -131,26 +165,41 @@ public class SpawnAgents : MonoBehaviour
                 agents[agentViewingNum].GetComponent<Agent>().ShouldPrint = true;
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            if (Time.timeScale > 1) Time.timeScale -= 1;
+        }
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            Time.timeScale += 1;
+        }
     }
 
+    int numAllAgentsMadeIt = 0;
     // Update is called once per frame
     void FixedUpdate()
     {
         if (!bAwake) return;
+        TimeToComplete += Time.fixedDeltaTime;
 
         Debug_UpdateGroundings();
 
-        if (iCount == NUM_ITERATIONS - 1) CompleteSimulation();
+        if (iCount == NUM_ITERATIONS) {CompleteSimulation(); return; }
         count += Time.fixedDeltaTime;
-        if (count >= AGENT_SLEEP_INTERVAL)
+        IterationTimeToComplete += Time.fixedDeltaTime;
+        if (count >= AGENT_SLEEP_INTERVAL || AgentsArrived == NumberOfAgents)
         {
-            Debug.Break();
+            if (AgentsArrived == NumberOfAgents) numAllAgentsMadeIt++;
+            CompleteIteration();
+            //Debug.Break();
             iterationNum++;
             Debug.Log("Iteration Finished");
             for (int i = 0; i < NumberOfAgents; i++)
             {
                 agents[i].GetComponent<Agent>().GetPlanner().CancelPath();
                 agents[i].GetComponent<Agent>().bAwake = false;
+                agents[i].GetComponent<Agent>().goalPathPoints.Clear();
                 agents[i].transform.position = new Vector3(agents[i].transform.position.x, 9999, agents[i].transform.position.z);
             }
 
@@ -176,7 +225,10 @@ public class SpawnAgents : MonoBehaviour
                 agent.ArrivedAtGoal = false;
             }
             count = 0;
+            AgentsArrived = 0;
             iCount++;
+            if (iCount != NUM_ITERATIONS)
+                fileLines.Add("Iteration " + (iCount + 1));
         }
     }
 
@@ -188,36 +240,43 @@ public class SpawnAgents : MonoBehaviour
     void Debug_UpdateGroundings()
     {
         List<Grounding> emptyGroundings = new List<Grounding>();
+        globalGroundingConsistency.Clear();
         for (int i = 0; i < globalGroundings.Count; i++)
         {
             globalGroundings[i].gameObject.SetActive(false);
-            int count = 0;
+            globalGroundingConsistency.Add(0);
             string text = "";
             for (int j = 0; j < NumberOfAgents; j++)
             {
                 bool bFoundGrounding = false;
+                bool bBad = false;
+                GroundingInfo DEBUG_GI = new GroundingInfo();
                 for (int k = 0; k < agents[j].GetComponent<Agent>().groundings.Count; k++)
                 {
                     if (agents[j].GetComponent<Agent>().groundings[k].obj == globalGroundings[i])
                     {
                         if (bFoundGrounding)
                         {
-                            Debug.Log("THIS IS BAD: MULTIPLE OF THE SAME GROUNDING IN 1 AGENT");
-                            for (int w = 0; w < agents[j].GetComponent<Agent>().groundings.Count; w++) Debug.Log("GROUNDING NAME: " + agents[j].GetComponent<Agent>().groundings[w].ID);
+                            bBad = true;
                         }
-                        if (j == agentViewingNum)
+                        else
                         {
-                            globalGroundings[i].gameObject.SetActive(true);
-                            text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
+                            if (j == agentViewingNum)
+                            {
+                                globalGroundings[i].gameObject.SetActive(true);
+                                text = "" + agents[j].GetComponent<Agent>().groundings[k].localConsistency;
+                            }
+                            globalGroundingConsistency[i]++;
+                            bFoundGrounding = true;
+                            DEBUG_GI = agents[j].GetComponent<Agent>().groundings[k];
                         }
-                        count++;
-                        bFoundGrounding = true;
                     }
                 }
+                if (bBad) agents[j].GetComponent<Agent>().groundings.Remove(DEBUG_GI);
             }
-            if (agentViewingNum == -1) text = "" + count;
+            if (agentViewingNum == -1) text = "" + globalGroundingConsistency[i];
 
-            if (count == 0) emptyGroundings.Add(globalGroundings[i]);
+            if (globalGroundingConsistency[i] == 0) emptyGroundings.Add(globalGroundings[i]);
 
             globalGroundings[i].GetComponentInChildren<TextMesh>().text = text;
             if (agentViewingNum == -1) globalGroundings[i].gameObject.SetActive(true);
@@ -233,8 +292,58 @@ public class SpawnAgents : MonoBehaviour
         }
     }
 
+    List<string> fileLines = new List<string>();
+    float IterationTimeToComplete = 0f;
+    /**
+     * #### void CompleteIteration()
+     * Adds Logging for an iteration to temp array
+     */
+    void CompleteIteration()
+    {
+        fileLines.Add("Iteration Time Taken: " + IterationTimeToComplete);
+        float IterationConsistency = 0;
+        for (int i = 0; i < globalGroundings.Count; i++)
+        {
+            IterationConsistency += (float)globalGroundingConsistency[i] / (float)NumberOfAgents;
+        }
+        IterationConsistency /= (float)globalGroundingConsistency.Count;
+        fileLines.Add("Iteration Grounding Consistency: " + (IterationConsistency * 100) + "%");
+        IterationTimeToComplete = 0;
+    }
+
+    float TimeToComplete = 0f;
+    /**
+     * #### void CompleteSimulation()
+     * Adds end of experiment logging to temp array;
+     */
     void CompleteSimulation()
     {
+        fileLines.Add("Number Rounds Successful: " + numAllAgentsMadeIt);
+        float IterationConsistency = 0;
+        for (int i = 0; i < globalGroundings.Count; i++)
+        {
+            IterationConsistency += (float)globalGroundingConsistency[i] / (float)NumberOfAgents;
+        }
+        IterationConsistency /= (float)globalGroundingConsistency.Count;
+        fileLines.Add("Final Grounding Consistency: " + (IterationConsistency * 100) + "%");
+        fileLines.Add("Total Time Taken: " + (TimeToComplete) + "s");
+        OutputResult();
         Debug.Break();
+    }
+
+    bool SAFETEY = false;
+    /**
+     * #### void OutputResult()
+     * Writes complete experiment results to a logging file based on temp array
+     */
+    void OutputResult()
+    {
+        if (SAFETEY) { Debug.Log("DANGER"); return; }
+        string filename = "Results_" + System.DateTime.Now.ToString().Replace(" ", "").Replace(":", "").Replace(".", "") + ".txt";
+        SAFETEY = true;
+        if (File.Exists(filename)) return;
+        var newFile = File.CreateText(filename);
+        for (int i = 0; i < fileLines.Count; i++) newFile.WriteLine(fileLines[i]);
+        newFile.Close();
     }
 }

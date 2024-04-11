@@ -1,0 +1,153 @@
+Iteration 1
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 20.3125%
+Iteration 2
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.64423%
+Iteration 3
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 25.14881%
+Iteration 4
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.41477%
+Iteration 5
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.30978%
+Iteration 6
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 26%
+Iteration 7
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 25.32895%
+Iteration 8
+Iteration Time Taken: 281.7237
+Iteration Grounding Consistency: 25.98684%
+Iteration 9
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.47845%
+Iteration 10
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.66393%
+Iteration 11
+Iteration Time Taken: 15.52017
+Iteration Grounding Consistency: 27.7664%
+Iteration 12
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.11538%
+Iteration 13
+Iteration Time Taken: 196.8852
+Iteration Grounding Consistency: 26.79924%
+Iteration 14
+Iteration Time Taken: 276.0269
+Iteration Grounding Consistency: 27.05224%
+Iteration 15
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 26.63043%
+Iteration 16
+Iteration Time Taken: 48.64092
+Iteration Grounding Consistency: 26.99275%
+Iteration 17
+Iteration Time Taken: 144.034
+Iteration Grounding Consistency: 27.38971%
+Iteration 18
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 27.94118%
+Iteration 19
+Iteration Time Taken: 49.28094
+Iteration Grounding Consistency: 27.98913%
+Iteration 20
+Iteration Time Taken: 46.50087
+Iteration Grounding Consistency: 28.67647%
+Iteration 21
+Iteration Time Taken: 26.12041
+Iteration Grounding Consistency: 29.10448%
+Iteration 22
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 29.75746%
+Iteration 23
+Iteration Time Taken: 52.52101
+Iteration Grounding Consistency: 29.75746%
+Iteration 24
+Iteration Time Taken: 20.06027
+Iteration Grounding Consistency: 29.94403%
+Iteration 25
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 30.22388%
+Iteration 26
+Iteration Time Taken: 16.24018
+Iteration Grounding Consistency: 31.25%
+Iteration 27
+Iteration Time Taken: 90.43684
+Iteration Grounding Consistency: 30.87687%
+Iteration 28
+Iteration Time Taken: 227.5118
+Iteration Grounding Consistency: 30.3442%
+Iteration 29
+Iteration Time Taken: 19.22025
+Iteration Grounding Consistency: 30.3442%
+Iteration 30
+Iteration Time Taken: 284.5222
+Iteration Grounding Consistency: 29.84155%
+Iteration 31
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 31.16197%
+Iteration 32
+Iteration Time Taken: 12.7801
+Iteration Grounding Consistency: 31.42606%
+Iteration 33
+Iteration Time Taken: 9.100019
+Iteration Grounding Consistency: 31.42606%
+Iteration 34
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 31.16438%
+Iteration 35
+Iteration Time Taken: 55.38108
+Iteration Grounding Consistency: 31.77083%
+Iteration 36
+Iteration Time Taken: 9.940038
+Iteration Grounding Consistency: 31.59246%
+Iteration 37
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 32.75%
+Iteration 38
+Iteration Time Taken: 20.18027
+Iteration Grounding Consistency: 33.53041%
+Iteration 39
+Iteration Time Taken: 76.67915
+Iteration Grounding Consistency: 34.12162%
+Iteration 40
+Iteration Time Taken: 12.96011
+Iteration Grounding Consistency: 34.375%
+Iteration 41
+Iteration Time Taken: 20.14027
+Iteration Grounding Consistency: 34.45946%
+Iteration 42
+Iteration Time Taken: 16.02018
+Iteration Grounding Consistency: 34.79729%
+Iteration 43
+Iteration Time Taken: 19.42025
+Iteration Grounding Consistency: 34.96622%
+Iteration 44
+Iteration Time Taken: 42.28078
+Iteration Grounding Consistency: 35.13514%
+Iteration 45
+Iteration Time Taken: 8.820012
+Iteration Grounding Consistency: 35.38852%
+Iteration 46
+Iteration Time Taken: 14.34014
+Iteration Grounding Consistency: 35.9589%
+Iteration 47
+Iteration Time Taken: 300.0137
+Iteration Grounding Consistency: 35.81081%
+Iteration 48
+Iteration Time Taken: 5.919995
+Iteration Grounding Consistency: 35.81081%
+Iteration 49
+Iteration Time Taken: 10.92006
+Iteration Grounding Consistency: 35.81081%
+Iteration 50
+Iteration Time Taken: 13.62012
+Iteration Grounding Consistency: 36.38699%
+Number Rounds Successful: 32
+Final Grounding Consistency: 36.38699%
+Total Time Taken: 7550.844s

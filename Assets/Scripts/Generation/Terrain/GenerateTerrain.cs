@@ -23,18 +23,15 @@ public class GenerateTerrain : MonoBehaviour
 
     public int id;
     public GenerateFoliage[] foliageGenerators;
-    /* * * * * * * * * * * * * */
 
     /* Side meshing verticies */
     protected Vector3[][] sidedVertices; //Copied from verticies
     protected int[][] sidedIndexs; //Matched to indecies in verticies
-    /* * * * * * * * * * * * */
 
     /* Main mesh vertecies */
     protected Vector3[] vertices;
     protected int[] triangles;
     protected Vector2[] uvs;
-    /* * * * * * * * * * * */
 
     private MeshCollider MC;
     private bool bInit = false;

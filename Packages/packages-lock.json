@@ -1,11 +1,5 @@
 {
   "dependencies": {
-    "com.gordocogames.openworldweb": {
-      "version": "file:C:/Users/gordo/OpenWorldWeb/OpenWorldWebPackage",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {}
-    },
     "com.unity.collab-proxy": {
       "version": "2.0.3",
       "depth": 0,

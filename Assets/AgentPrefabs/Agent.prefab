@@ -95,8 +95,8 @@ GameObject:
   - component: {fileID: 5891298302622670680}
   - component: {fileID: 8092980767597770478}
   - component: {fileID: -4175849501445752044}
-  - component: {fileID: -3944785786497415299}
-  - component: {fileID: 9172048601458377516}
+  - component: {fileID: 4186088505659443717}
+  - component: {fileID: -5566699150323413526}
   m_Layer: 0
   m_Name: Agent
   m_TagString: Agent
@@ -139,9 +139,10 @@ MonoBehaviour:
   ArrivedAtGoal: 0
   master: {fileID: 0}
   ShouldPrint: 0
-  GroundingDemonstrationCooldown: 10
-  GroundingCreationCooldown: 1
-  GroundingUniqueDist: 3
+  GroundingDemonstrationCooldown: 1
+  GroundingCreationCooldown: 10
+  GroundingUniqueDist: 10
+  goalPathPoints: []
   movementDirection: {x: 0, y: 0, z: 0}
   bAwake: 0
 --- !u!114 &8092980767597770478
@@ -176,7 +177,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-3944785786497415299
+--- !u!114 &4186088505659443717
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -185,10 +186,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2504367276833023728}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e831b9270aaa3d142ba4136bf75366bb, type: 3}
+  m_Script: {fileID: 11500000, guid: 6965a0f1ddc649e4db45ccd386ddc8f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &9172048601458377516
+--- !u!114 &-5566699150323413526
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -197,6 +198,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2504367276833023728}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5d423b0eacfb0a46907a72c0de68e4b, type: 3}
+  m_Script: {fileID: 11500000, guid: 59dbd203110017047bed62c9a52c7a37, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  entropyExtent: 2

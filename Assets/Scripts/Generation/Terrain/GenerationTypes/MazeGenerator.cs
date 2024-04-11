@@ -12,8 +12,6 @@ public class MazeGenerator : GenerateTerrain
     [SerializeField] private int unitSize = 10;
 
     [SerializeField] private Texture2D sourceTex;
-    /* * * * * * * * * * * * */
-
     [HideInInspector] public bool hasFloor = true;
 
     private int oldVertLength = 0;

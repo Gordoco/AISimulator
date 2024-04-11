@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/**
+ * Test Script for allowing hand placed agents to be included in simulations
+ */
 public class TEST_TriggerSpecifiedAgents : MonoBehaviour
 {
     [SerializeField] private GameObject[] AGENTS;
